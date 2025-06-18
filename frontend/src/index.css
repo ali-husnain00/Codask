@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code&family=Poppins:wght@400;600;700&display=swap');
+
+:root {
+    --bg-main: #1E1E2F;
+    --bg-panel: #2A2A3B;
+    --accent: #14C8FF;
+    --text: #E0E0E0;
+    --text-muted: #A0A0A0;
+    --success: #3DDC97;
+    --error: #FF5C5C;
+
+    --font-ui: 'Poppins', sans-serif;
+    --font-code: 'Fira Code', monospace;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text);
+    font-family: var(--font-ui);
+    line-height: 1.6;
+}
+
+h1 {
+    font-size: clamp(24px, 5vw, 48px);
+    font-weight: 700;
+}
+
+h2 {
+    font-size: clamp(20px, 4vw, 36px);
+    font-weight: 600;
+}
+
+h3 {
+    font-size: clamp(18px, 3.5vw, 28px);
+    font-weight: 600;
+}
+
+p {
+    font-size: clamp(14px, 2.5vw, 18px);
+    font-weight: 400;
+    color: var(--text-muted);
+}
