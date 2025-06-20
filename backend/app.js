@@ -7,6 +7,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import connectDB from "./config/db.js";
 import user from "./models/user.js";
+import verifyToken from "./middlewares/verifyToken.js";
 
 dotenv.config();
 connectDB();
@@ -98,6 +99,20 @@ app.post("/logout", (req, res) => {
     console.log(error)
   }
 });
+
+app.get("/getLoggedInUser", verifyToken, async (req, res) =>{
+  const userId = req.user.id;
+  try {
+    const existingUser = await user.findById(userId).select("-password");
+    if(!existingUser){
+      return res.status(404).send("User not found!")
+    }
+
+    res.status(200).send(existingUser)
+  } catch (error) {
+    res.status(500).send("An error occured while getting loggedIn User");
+  }
+})
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
