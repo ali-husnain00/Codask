@@ -1,0 +1,24 @@
+.editor-layout {
+  display: flex;
+  height: 100vh;
+  background-color: var(--bg-main);
+}
+
+.editor-main {
+  display: flex;
+  flex: 1;
+  transition: all 0.3s ease;
+}
+
+.editor-main.split > * {
+  flex: 1;
+  border-left: 1px solid #333;
+}
+
+.editor-main.editor > .preview-panel {
+  display: none;
+}
+
+.editor-main.preview > .editor-panel {
+  display: none;
+}

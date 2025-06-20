@@ -1,0 +1,50 @@
+.editor-sidebar {
+  width: 300px;
+  background-color: var(--bg-panel);
+  color: var(--text);
+  padding: 20px 70px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  border-right: 2px solid #282c3c;
+}
+
+.section h4 {
+  font-size: 1rem;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+.section ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.section li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  transition: 0.2s;
+}
+
+.section li:hover {
+  color: var(--text);
+}
+
+.file-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.file-header button {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 1rem;
+}

@@ -8,6 +8,9 @@ import jwt from "jsonwebtoken";
 import connectDB from "./config/db.js";
 import user from "./models/user.js";
 import verifyToken from "./middlewares/verifyToken.js";
+import file from "./models/file.js";
+import project from "./models/project.js";
+import crypto from "crypto"
 
 dotenv.config();
 connectDB();
@@ -113,6 +116,54 @@ app.get("/getLoggedInUser", verifyToken, async (req, res) =>{
     res.status(500).send("An error occured while getting loggedIn User");
   }
 })
+
+app.post("/createProject", verifyToken, async (req, res) =>{
+  const {title, description, language, isSolo} = req.body;
+  const userId = req.user.id;
+
+  try {
+    const existingUser = await user.findById(userId);
+    if(!existingUser){
+      return res.status(404).send("User not found!")
+    }
+
+    if(!title || !description || !language){
+      return res.status(400).send("All fields are required!")
+    }
+
+    const roomId = crypto.randomBytes(4).toString("hex");
+
+    const newProject = await project.create({
+      title,
+      description,
+      language,
+      lead:userId,
+      isSolo,
+      members: isSolo ? [] : [{userId, role: "Project lead"}],
+      roomId,
+    })
+
+    const default_File = await file.create({
+      projectId:newProject._id,
+      filename:`main.${language === "Js" ? "js" : language.toLowerCase()}`,
+      content:"// Start coding...",
+      language,
+      createdBy: userId,
+    })
+
+    newProject.files.push(default_File._id);
+    await newProject.save();
+
+    existingUser.projects.push({projectId:newProject._id, role:"lead"});
+    await existingUser.save();
+
+    res.status(200).send({roomId:newProject.roomId, projectId:newProject._id});
+  } catch (error) {
+    res.status(500).send("An error occured while creating project");
+    console.log(error)
+  }
+})
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

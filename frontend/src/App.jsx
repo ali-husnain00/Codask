@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard/Dashboard'
 import { Context } from './components/context/context'
 import Loader from './components/Loader/Loader'
 import ProtectedRoute from './components/ProtectedRoute'
+import Editor from './pages/Editor/Editor'
 
 const App = () => {
 
@@ -31,6 +32,7 @@ const App = () => {
         <Route path='/register' element={<Register />} />
         <Route element={<ProtectedRoute />} >
           <Route path='/dashboard' element={<Dashboard />} />
+          <Route path='/editor' element = {<Editor/>}/>
         </Route>
       </Routes>
       <Toaster position='top-center' richColors />

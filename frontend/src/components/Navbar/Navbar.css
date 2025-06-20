@@ -5,8 +5,9 @@
     justify-content: space-between;
     align-items: center;
     overflow: hidden;
-    padding: 0 100px;
+    padding: 0 50px;
     background-color: var(--bg-panel);
+    border-bottom: 1px solid var(--text-muted);
 }
 
 .logo{
