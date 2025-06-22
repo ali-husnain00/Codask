@@ -10,7 +10,8 @@ import user from "./models/user.js";
 import verifyToken from "./middlewares/verifyToken.js";
 import file from "./models/file.js";
 import project from "./models/project.js";
-import crypto from "crypto"
+import crypto from "crypto";
+import { userInfo } from "os";
 
 dotenv.config();
 connectDB();
@@ -99,36 +100,42 @@ app.post("/logout", (req, res) => {
     });
     res.status(200).send("User Logged out successfully!");
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
 });
 
-app.get("/getLoggedInUser", verifyToken, async (req, res) =>{
+app.get("/getLoggedInUser", verifyToken, async (req, res) => {
   const userId = req.user.id;
+
   try {
-    const existingUser = await user.findById(userId).select("-password");
-    if(!existingUser){
-      return res.status(404).send("User not found!")
+    const existingUser = await user
+      .findById(userId)
+      .select("-password")
+      .populate("projects");
+
+    if (!existingUser) {
+      return res.status(404).send("User not found!");
     }
 
-    res.status(200).send(existingUser)
+    res.status(200).json(existingUser);
   } catch (error) {
-    res.status(500).send("An error occured while getting loggedIn User");
+    console.error("Error getting logged-in user:", error.message);
+    res.status(500).send("An error occurred while getting the logged-in user");
   }
-})
+});
 
-app.post("/createProject", verifyToken, async (req, res) =>{
-  const {title, description, language, isSolo} = req.body;
+app.post("/createProject", verifyToken, async (req, res) => {
+  const { title, description, language, isSolo } = req.body;
   const userId = req.user.id;
 
   try {
     const existingUser = await user.findById(userId);
-    if(!existingUser){
-      return res.status(404).send("User not found!")
+    if (!existingUser) {
+      return res.status(404).send("User not found!");
     }
 
-    if(!title || !description || !language){
-      return res.status(400).send("All fields are required!")
+    if (!title || !description || !language) {
+      return res.status(400).send("All fields are required!");
     }
 
     const roomId = crypto.randomBytes(4).toString("hex");
@@ -137,30 +144,114 @@ app.post("/createProject", verifyToken, async (req, res) =>{
       title,
       description,
       language,
-      lead:userId,
+      lead: userId,
       isSolo,
-      members: isSolo ? [] : [{userId, role: "Project lead"}],
+      members: isSolo ? [] : [{ userId, role: "Project lead" }],
       roomId,
-    })
+    });
 
+    const extMap = {
+      javascript: "js",
+      python: "py",
+      java: "java",
+      cpp: "cpp",
+    };
+
+    const extension = extMap[language.toLowerCase()] || "txt";
     const default_File = await file.create({
-      projectId:newProject._id,
-      filename:`main.${language === "Js" ? "js" : language.toLowerCase()}`,
-      content:"// Start coding...",
+      projectId: newProject._id,
+      filename: `main.${extension}`,
+      content: "",
       language,
       createdBy: userId,
-    })
+    });
 
     newProject.files.push(default_File._id);
     await newProject.save();
 
-    existingUser.projects.push({projectId:newProject._id, role:"lead"});
+    existingUser.projects.push(newProject._id);
     await existingUser.save();
 
-    res.status(200).send({roomId:newProject.roomId, projectId:newProject._id});
+    res
+      .status(200)
+      .send({ roomId: newProject.roomId, projectId: newProject._id });
   } catch (error) {
     res.status(500).send("An error occured while creating project");
-    console.log(error)
+    console.log(error);
+  }
+});
+
+app.get("/project/:id", verifyToken, async (req, res) => {
+  const id = req.params.id;
+  try {
+    const existingProject = await project
+      .findById(id)
+      .populate({ path: "members.userId", select: "username email" })
+      .populate("files");
+    if (!existingProject) {
+      return res.status(404).send("Project not found!");
+    }
+
+    res.status(200).send(existingProject);
+  } catch (error) {
+    res.status(500).send("An error occured while getting project details");
+    console.log(error);
+  }
+});
+
+app.post("/createNewFile/:projectId", verifyToken, async (req, res) => {
+  const projectId = req.params.projectId;
+  const { filename, language } = req.body;
+  const userId = req.user.id;
+
+  try {
+    const existingUser = await user.findById(userId);
+    if (!existingUser) {
+      return res.status(404).send("User not found!");
+    }
+
+    const proj = await project.findById(projectId).populate("files");
+    if (!proj) {
+      return res.status(404).send("Project not found!");
+    }
+
+    const isDuplicate = proj.files.some(file => file.filename === filename);
+    if (isDuplicate) {
+      return res.status(400).send("A file with the same name already exists in this project.");
+    }
+
+    const newFile = await file.create({
+      projectId,
+      filename,
+      language,
+      content: "",
+      createdBy: userId,
+    });
+
+    proj.files.push(newFile._id);
+    await proj.save();
+
+    res.status(201).send(newFile);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("An error occurred while creating the new file.");
+  }
+});
+
+app.post("/saveCode", verifyToken, async (req, res) =>{
+  const {fileId, content} = req.body;
+  try {
+    const f = await file.findById(fileId);
+    if(!f){
+      return res.status(404).send("File not found!")
+    }
+
+    f.content = content;
+    await f.save();
+
+    res.status(200).send("File code saved");
+  } catch (error) {
+    res.status(500).send("An error occured while saving the code");
   }
 })
 

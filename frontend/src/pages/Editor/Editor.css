@@ -22,3 +22,27 @@
 .editor-main.preview > .editor-panel {
   display: none;
 }
+
+.editor-toggle-icons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 10px 15px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid #333;
+}
+
+.editor-toggle-icons button {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 18px;
+  transition: color 0.2s;
+}
+
+.editor-toggle-icons button:hover,
+.editor-toggle-icons button.active {
+  color: var(--accent);
+}
+

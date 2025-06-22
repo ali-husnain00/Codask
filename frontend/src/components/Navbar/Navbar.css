@@ -8,6 +8,7 @@
     padding: 0 50px;
     background-color: var(--bg-panel);
     border-bottom: 1px solid var(--text-muted);
+    animation: slideFromTop 0.45s ease;
 }
 
 .logo{
@@ -32,4 +33,13 @@
 
 .hide{
     display: none;
+}
+
+@keyframes slideFromTop {
+    0%{
+       transform: translateY(-100px);
+    }
+    100%{
+        transform: translateY(0);
+    }
 }

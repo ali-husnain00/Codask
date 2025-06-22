@@ -10,7 +10,7 @@
     --error: #FF5C5C;
 
     --font-ui: 'Poppins', sans-serif;
-    --font-code: 'Fira Code', monospace;
+    --font-code: 'Fira Code';
 }
 
 * {

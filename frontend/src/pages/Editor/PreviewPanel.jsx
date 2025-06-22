@@ -1,24 +1,10 @@
 import React from 'react';
 import './PreviewPanel.css';
 import { FaEye } from 'react-icons/fa';
+import Console from '../../components/Console/Console';
 
-const PreviewPanel = ({ file }) => {
-  const renderPreview = () => {
-    if (!file) return <p>No file selected</p>;
-
-    if (file.language === 'html') {
-      return (
-        <iframe
-          title="Live Preview"
-          srcDoc={file.content}
-          sandbox="allow-scripts"
-          className="preview-iframe"
-        />
-      );
-    }
-
-    return <pre className="not-supported">Preview not available for this file type</pre>;
-  };
+const PreviewPanel = ({ file, previewHTML, logs, onInputSubmit, requiresInput, inputPrompts, currentPromptIndex, isMultiLineInput }) => {
+  const isCodeLanguage = (lang) => ['javascript', 'python', 'java', 'cpp'].includes(lang);
 
   return (
     <div className="preview-panel">
@@ -26,7 +12,27 @@ const PreviewPanel = ({ file }) => {
         <FaEye /> <span>Live Preview</span>
       </div>
       <div className="preview-body">
-        {renderPreview()}
+        {!file ? (
+          <p>No file selected</p>
+        ) : file.language === 'html' ? (
+          <iframe
+            title="Live Preview"
+            srcDoc={previewHTML}
+            sandbox="allow-scripts"
+            className="preview-iframe"
+          />
+        ) : isCodeLanguage(file.language.toLowerCase()) ? (
+          <Console
+            logs={logs}
+            requiresInput={requiresInput}
+            inputPrompts={inputPrompts}
+            currentPromptIndex={currentPromptIndex}
+            onSubmitInput={onInputSubmit}
+            isMultiLineInput={isMultiLineInput}
+          />
+        ) : (
+          <p>Preview not available for this file type</p>
+        )}
       </div>
     </div>
   );

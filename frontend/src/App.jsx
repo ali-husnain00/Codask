@@ -32,7 +32,7 @@ const App = () => {
         <Route path='/register' element={<Register />} />
         <Route element={<ProtectedRoute />} >
           <Route path='/dashboard' element={<Dashboard />} />
-          <Route path='/editor' element = {<Editor/>}/>
+          <Route path='/editor/:id' element = {<Editor/>}/>
         </Route>
       </Routes>
       <Toaster position='top-center' richColors />

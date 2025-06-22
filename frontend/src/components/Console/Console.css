@@ -1,0 +1,62 @@
+.console-container {
+  background-color: #1E1E2F;
+  color: #E0E0E0;
+  padding: 1rem;
+  border-radius: 8px;
+  font-family: 'Fira Code', monospace;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.console-header {
+  font-weight: bold;
+  color: #87CEFA;
+  margin-bottom: 0.5rem;
+}
+
+.console-body .log {
+  margin-bottom: 4px;
+}
+
+.console-body .log.error {
+  color: #FF6B6B;
+}
+
+.console-body .log.warn {
+  color: #FFD93D;
+}
+
+.console-body .log.log {
+  color: #A6E3A1;
+}
+
+.console-input {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.console-input input {
+  padding: 8px 12px;
+  font-size: 17px;
+  border-radius: 4px;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  color: (--text);
+  flex: 1;
+}
+
+textarea{
+  background-color: transparent;
+  border: 1px solid (--accent);
+  outline: none;
+  border: 5px;
+  width: 200px;
+  height: 200px;
+  resize: none;
+  color: (--text);
+}
+
+
