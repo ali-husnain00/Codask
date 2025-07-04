@@ -2,34 +2,37 @@ import React from 'react';
 import './PreviewPanel.css';
 import { FaEye } from 'react-icons/fa';
 import Console from '../../components/Console/Console';
+import { FiMaximize } from 'react-icons/fi';
+import { FiSidebar } from 'react-icons/fi';
 
-const PreviewPanel = ({ file, previewHTML, logs, onInputSubmit, requiresInput, inputPrompts, currentPromptIndex, isMultiLineInput }) => {
-  const isCodeLanguage = (lang) => ['javascript', 'python', 'java', 'cpp'].includes(lang);
+const PreviewPanel = ({ file, previewHTML, logs, previewMode, setPreviewMode }) => {
+  const language = file?.language?.toLowerCase();
+  const isConsoleLang = ['javascript', 'python', 'cpp', 'java'].includes(language);
 
   return (
-    <div className="preview-panel">
+    <div className={`preview-panel ${previewMode === "preview" ? "preview-fullWidth" : "" || previewMode === "split" ? "preview-halfWidth" : "" || previewMode === "editor" ? "hide-preview" : ""}`}>
       <div className="preview-header">
-        <FaEye /> <span>Live Preview</span>
+        <span><FaEye /> Live Preview</span>
+        <div className="action-btns">
+          <FiMaximize size={24} title="Full Editor View" onClick={() => setPreviewMode("preview")} />
+          <FiSidebar size={24} title="Split View" onClick={() => setPreviewMode("split")} />
+        </div>
       </div>
       <div className="preview-body">
         {!file ? (
           <p>No file selected</p>
-        ) : file.language === 'html' ? (
+        ) : language === 'html' ? (
           <iframe
             title="Live Preview"
             srcDoc={previewHTML}
-            sandbox="allow-scripts"
+            sandbox="allow-scripts allow-same-origin"
             className="preview-iframe"
           />
-        ) : isCodeLanguage(file.language.toLowerCase()) ? (
+        ) : isConsoleLang ? (
           <Console
             logs={logs}
-            requiresInput={requiresInput}
-            inputPrompts={inputPrompts}
-            currentPromptIndex={currentPromptIndex}
-            onSubmitInput={onInputSubmit}
-            isMultiLineInput={isMultiLineInput}
           />
+
         ) : (
           <p>Preview not available for this file type</p>
         )}

@@ -1,26 +1,17 @@
 .editor-layout {
   display: flex;
-  height: 100vh;
+
+  width: 100vw;
+  min-height : calc(100vh - 100px);
+  height: auto;
   background-color: var(--bg-main);
 }
 
 .editor-main {
+  width: calc(100vw - 300px);
   display: flex;
-  flex: 1;
+  height: auto;
   transition: all 0.3s ease;
-}
-
-.editor-main.split > * {
-  flex: 1;
-  border-left: 1px solid #333;
-}
-
-.editor-main.editor > .preview-panel {
-  display: none;
-}
-
-.editor-main.preview > .editor-panel {
-  display: none;
 }
 
 .editor-toggle-icons {

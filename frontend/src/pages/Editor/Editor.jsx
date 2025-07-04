@@ -17,16 +17,10 @@ const Editor = () => {
   const [loading, setLoading] = useState(true);
   const [previewHTML, setPreviewHTML] = useState("");
   const [logs, setLogs] = useState([]);
-  const [inputValue, setInputValue] = useState('');
-  const [requiresInput, setRequiresInput] = useState(false);
-  const [inputPrompts, setInputPrompts] = useState([]);
-  const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
-  const [collectedInputs, setCollectedInputs] = useState([]);
-  const [isMultiLineInput, setIsMultiLineInput] = useState(false);
 
   const fetchProject = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
       const res = await fetch(`${BASE_URL}/project/${id}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
@@ -37,10 +31,10 @@ const Editor = () => {
         const data = await res.json();
         setEditorData(data);
       } else {
-        toast.error("Could not fetch project data");
+        toast.error("Failed to fetch project data");
       }
     } catch (error) {
-      toast.error("Something went wrong while fetching project");
+      toast.error("An error occurred while fetching the project");
     } finally {
       setLoading(false);
     }
@@ -53,53 +47,17 @@ const Editor = () => {
   useEffect(() => {
     if (editorData?.files?.length > 0) {
       setActiveFile(editorData.files[0]);
-      resetInputStates();
+      setLogs([]);
     }
   }, [editorData]);
 
-  // Reset input related states
-  const resetInputStates = () => {
-    setInputValue('');
-    setRequiresInput(false);
-    setInputPrompts([]);
-    setCurrentPromptIndex(0);
-    setCollectedInputs([]);
-    setIsMultiLineInput(false);
-    setLogs([]);
-  };
-
-  // Called when user submits input from Console
-  const onSubmitInput = (input) => {
-    if (isMultiLineInput) {
-      // Java/C++ multiline input: send all inputs at once
-      setInputValue(input);
-      setRequiresInput(false);
-      setCollectedInputs([]);
-      setCurrentPromptIndex(0);
-    } else {
-      // Python multi-step input prompts
-      const newCollectedInputs = [...collectedInputs, input];
-      setCollectedInputs(newCollectedInputs);
-
-      if (currentPromptIndex + 1 < inputPrompts.length) {
-        setCurrentPromptIndex(currentPromptIndex + 1);
-      } else {
-        setInputValue(newCollectedInputs.join('\n'));
-        setRequiresInput(false);
-        setCollectedInputs([]);
-        setCurrentPromptIndex(0);
-      }
-    }
-  };
-
-  // Called when new file is added
   const handleNewFile = (newFile) => {
     setEditorData(prev => ({
       ...prev,
       files: [...(prev.files || []), newFile]
     }));
     setActiveFile(newFile);
-    resetInputStates();
+    setLogs([]);
   };
 
   if (loading) return <Loader />;
@@ -111,44 +69,32 @@ const Editor = () => {
         members={editorData?.members || []}
         onFileSelect={(file) => {
           setActiveFile(file);
-          resetInputStates();
+          setLogs([]);
         }}
         onNewFile={handleNewFile}
         projectId={id}
         fetchProject={fetchProject}
       />
+
       <div className={`editor-main ${previewMode}`}>
         {previewMode !== "preview" && (
           <EditorPanel
             files={editorData.files}
             file={activeFile}
-            inputValue={inputValue}
-            setInputValue={setInputValue}
-            requiresInput={requiresInput}
-            setRequiresInput={setRequiresInput}
-            inputPrompts={inputPrompts}
-            setInputPrompts={setInputPrompts}
-            currentPromptIndex={currentPromptIndex}
-            setCurrentPromptIndex={setCurrentPromptIndex}
-            collectedInputs={collectedInputs}
-            setCollectedInputs={setCollectedInputs}
-            isMultiLineInput={isMultiLineInput}
-            setIsMultiLineInput={setIsMultiLineInput}
-            setLogs={setLogs}
             setPreviewHTML={setPreviewHTML}
+            logs={logs}
+            setLogs={setLogs}
+            previewMode = {previewMode}
+            setPreviewMode = {setPreviewMode}
           />
         )}
         {previewMode !== "editor" && (
           <PreviewPanel
-            logs={logs}
             previewHTML={previewHTML}
             file={activeFile}
-            files={editorData.files}
-            requiresInput={requiresInput}
-            onInputSubmit={onSubmitInput}
-            inputPrompts={inputPrompts}
-            currentPromptIndex={currentPromptIndex}
-            isMultiLineInput={isMultiLineInput}
+            logs={logs}
+            previewMode = {previewMode}
+            setPreviewMode = {setPreviewMode}
           />
         )}
       </div>

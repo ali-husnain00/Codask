@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react';
 import { useNavigate } from "react-router-dom"
 import './Projects.css';
 import { FaPlus, FaEdit, FaTrashAlt, FaChevronDown } from 'react-icons/fa';
+import { FiCopy } from 'react-icons/fi';
 import { MdClose } from 'react-icons/md';
 import { Context } from '../../components/context/context';
 import { toast } from "sonner"
@@ -27,7 +28,7 @@ const Projects = () => {
   const navigate = useNavigate()
   const { BASE_URL, user, getLoggedInUser, getProject } = useContext(Context);
 
-  const handleCreateProject = async (e, id) => {
+  const handleCreateProject = async (e) => {
     e.preventDefault();
     setLoading(true)
     try {
@@ -40,9 +41,10 @@ const Projects = () => {
         body: JSON.stringify({ title, description, language, isSolo })
       })
       if (res.ok) {
+        const data = await res.json();
         toast.success("Project created successfully!");
         getLoggedInUser();
-        navigate(`/editor/${id}`)
+        navigate(`/editor/${data.projectId}`)
       }
       else {
         toast.error("An error occured while creating project");
@@ -51,6 +53,29 @@ const Projects = () => {
       console.log(error)
     }
     finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteProject = async (id) =>{
+    setLoading(true);
+    try {
+      const res = await fetch(`${BASE_URL}/deleteProject/${id}`,{
+        method:"DELETE",
+        headers:{
+          'Content-Type':"application/json"
+        },
+        credentials:"include"
+      })
+      if(res.ok){
+        getLoggedInUser();
+        toast.success("Project deleted Successfully!");
+      }
+    } catch (error) {
+      toast.error("Server error");
+      console.log(error);
+    }
+    finally{
       setLoading(false)
     }
   }
@@ -93,7 +118,17 @@ const Projects = () => {
             (
               user.projects.map(project => (
                 <div key={project._id} className="project-card">
-                  <h3>{project.title}</h3>
+                  <h3>
+                    {project.title}
+                    <FiCopy fontSize={24}
+                      className="copy-icon"
+                      title="Copy Project ID"
+                      onClick={() => {
+                        navigator.clipboard.writeText(project._id);
+                        toast.success("Project ID copied!");
+                      }}
+                    />
+                  </h3>
                   <p>{project.description.length > 70 ? project.description.slice(0, 70) + "..." : project.description}</p>
                   <div className="progress-bar">
                     <div className="fill" style={{ width: `${project.progress}%` }}></div>
@@ -103,10 +138,10 @@ const Projects = () => {
                     <button className="btn edit" onClick={() => getProject(project._id)}>
                       <FaEdit /> Edit
                     </button>
-                    <button className="btn delete">
+                    <button className="btn delete" onClick={() =>handleDeleteProject(project._id)}>
                       <FaTrashAlt /> Delete
                     </button>
-                    <button className="btn details" onClick={() => getProject(project._id)}>
+                    <button className="btn details" onClick={() => navigate(`/projectDetail/${project._id}`)}>
                       Details
                     </button>
                   </div>
@@ -128,32 +163,32 @@ const Projects = () => {
               <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Project Title" />
               <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description"></textarea>
 
-              <div className="custom-select">
-                <div className="selected" onClick={() => setDropdownOpen(!dropdownOpen)}>
-                  {languages.find(l => l.value === language)?.label || "Select Language"
-                  } <FaChevronDown />
+              <div className="custom-select" style={{ position: "relative" }}>
+                <div
+                  className="selected"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                >
+                  {languages.find(l => l.value === language)?.label || "Select Language"} <FaChevronDown />
                 </div>
+
                 {dropdownOpen && (
                   <div className="dropdown">
-                    <div className="dropdown">
-                      {languages.map((lang, i) => (
-                        <div
-                          className="option"
-                          key={i}
-                          onClick={() => {
-                            setLanguage(lang.value);
-                            setDropdownOpen(false);
-                          }}
-                        >
-                          {lang.label}
-                        </div>
-                      ))}
-                    </div>
-
+                    {languages.map((lang, i) => (
+                      <div
+                        key={i}
+                        className="option"
+                        onClick={() => {
+                          setLanguage(lang.value);
+                          setDropdownOpen(false);
+                        }}
+                        style={{ padding: "8px 12px", cursor: "pointer" }}
+                      >
+                        {lang.label}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
-
               <label className="checkbox">
                 <input type="checkbox" value={isSolo} onChange={() => setIsSolo(!isSolo)} /> Work Solo
               </label>

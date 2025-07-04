@@ -1,20 +1,33 @@
 .preview-panel {
-  flex: 1;
   display: flex;
   flex-direction: column;
   background: var(--bg-main);
   color: var(--text);
+  width: 50%;
 }
 
 .preview-header {
   background: var(--bg-panel);
-  padding: 0.6rem 1rem;
+  padding: 1rem;
   font-weight: bold;
   display: flex;
   align-items: center;
   gap: 0.6rem;
   color: var(--accent);
   border-bottom: 1px solid #333;
+  justify-content: space-between;
+}
+
+.preview-header span{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.action-btns{
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .preview-body {
@@ -34,4 +47,18 @@
 .not-supported {
   color: var(--text-muted);
   font-style: italic;
+}
+
+.preview-fullWidth{
+  width: 100%;
+  display: flex;
+}
+
+.preview-halfWidth{
+  width: 50%;
+  display: flex;
+}
+
+.hide-preview{
+  display: none;
 }

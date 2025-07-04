@@ -54,14 +54,46 @@ const ContextProvider = ({ children }) => {
         } catch (error) {
             toast.error("An error occured while opening project!")
         }
-        finally{
+        finally {
             setLoading(false)
         }
     }
 
+    const getAssignedProjects = async () => {
+        try {
+            const res = await fetch(`${BASE_URL}/getAssignedProjects`, {
+                method: "GET",
+                credentials: "include",
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+
+                const filteredProjects = data.filter((proj) => {
+                    return !user.projects.some((p) => p._id.toString() === proj._id.toString());
+                });
+
+                if (filteredProjects.length > 0) {
+                    setUser(prev => ({
+                        ...prev,
+                        projects: [...prev.projects, ...filteredProjects]
+                    }));
+                }
+            }
+        } catch (error) {
+            console.error("Server error while fetching assigned projects:", error);
+        }
+    };
+
     useEffect(() => {
-        getLoggedInUser()
-    }, [])
+        getLoggedInUser();
+    }, []);
+
+    useEffect(() => {
+        if (user) {
+            getAssignedProjects();
+        }
+    }, [user]);
 
     const value = {
         BASE_URL,
@@ -71,6 +103,7 @@ const ContextProvider = ({ children }) => {
         editorData,
         setEditorData,
         getProject,
+        getAssignedProjects,
     }
 
     return (

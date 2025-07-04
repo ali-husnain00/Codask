@@ -1,10 +1,11 @@
 import React, { useContext, useState } from 'react';
 import { Context } from '../../components/context/context';
-import { FaFolderOpen, FaTasks, FaEnvelopeOpenText } from "react-icons/fa";
+import { FaFolderOpen, FaTasks, FaEnvelopeOpenText, FaUserPlus  } from "react-icons/fa";
 import "./Dashboard.css"; // for styling
 import Projects from './Projects';
 import Tasks from './Tasks';
 import Invites from './Invites';
+import AddMember from './AddMember';
 
 
 const Dashboard = () => {
@@ -17,6 +18,8 @@ const Dashboard = () => {
         return <Projects />;
       case "tasks":
         return <Tasks />;
+      case "add-member":
+        return <AddMember/>;
       case "invites":
         return <Invites />;
       default:
@@ -43,6 +46,12 @@ const Dashboard = () => {
             onClick={() => setActiveComp("tasks")}
           >
             <FaTasks className="icon" /> Tasks
+          </li>
+          <li
+            className={activeComp === "add-member" ? "active" : ""}
+            onClick={() => setActiveComp("add-member")}
+          >
+            <FaUserPlus className="icon" /> Add Members
           </li>
           <li
             className={activeComp === "invites" ? "active" : ""}

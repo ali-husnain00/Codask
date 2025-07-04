@@ -18,15 +18,14 @@
   margin-bottom: 4px;
 }
 
-.console-body .log.error {
+.error {
   color: #FF6B6B;
 }
 
-.console-body .log.warn {
+.warn {
   color: #FFD93D;
 }
-
-.console-body .log.log {
+.log {
   color: #A6E3A1;
 }
 

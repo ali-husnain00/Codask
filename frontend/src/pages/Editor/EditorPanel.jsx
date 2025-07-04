@@ -4,254 +4,138 @@ import { FaCode } from 'react-icons/fa';
 import { Editor } from "@monaco-editor/react";
 import { Context } from '../../components/context/context';
 import { toast } from 'sonner';
+import { FiMaximize } from 'react-icons/fi';
+import { FiSidebar } from 'react-icons/fi';
 
-const EditorPanel = ({
-  files,
-  file,
-  inputValue,
-  setInputValue,
-  requiresInput,
-  setRequiresInput,
-  inputPrompts,
-  setInputPrompts,
-  currentPromptIndex,
-  setCurrentPromptIndex,
-  collectedInputs,
-  setCollectedInputs,
-  isMultiLineInput,
-  setIsMultiLineInput,
-  setLogs,
-  setPreviewHTML,
-}) => {
+const EditorPanel = ({ file, files, setPreviewHTML, setLogs, previewMode, setPreviewMode }) => {
   const [content, setContent] = useState('');
   const { BASE_URL, setEditorData } = useContext(Context);
-  const JUDGE0_API_KEY = import.meta.env.VITE_JUDGE0_API;
 
   useEffect(() => {
-    if (file) {
-      setContent(file.content || '');
-      setInputValue('');
-      setRequiresInput(false);
-      setLogs([]);
-      setInputPrompts([]);
-      setCurrentPromptIndex(0);
-      setCollectedInputs([]);
-      setIsMultiLineInput(false);
-    }
+    if (file) setContent(file.content || '');
   }, [file]);
 
-  const parsePythonInputPrompts = (code) => {
-    const regex = /input\s*\(\s*["']([^"']*)["']\s*\)/g;
-    const prompts = [];
-    let match;
-    while ((match = regex.exec(code)) !== null) {
-      prompts.push(match[1]);
+  const getExtension = (lang) => {
+    switch (lang) {
+      case 'javascript': return 'js';
+      case 'python': return 'py';
+      case 'cpp': return 'cpp';
+      case 'java': return 'java';
+      default: return 'txt';
     }
-    return prompts;
   };
 
-  const parseJavaCppPrompts = (code) => {
-    const regex = /\[PROMPT\](.*?)(?=\\n|")/g;
-    const prompts = [];
-    let match;
-    while ((match = regex.exec(code)) !== null) {
-      prompts.push(match[1].trim());
-    }
-    return prompts;
-  };
-
-  const codeNeedsInput = (code) => {
-    return /cin\s*>>|Scanner|System\.in|scanf/.test(code);
-  };
-
-  const runWithJudge0 = async (language, code, input = "") => {
-    const JUDGE0_API_URL = 'https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true';
-    const languageMap = { cpp: 54, python: 71, java: 62 };
-    const langId = languageMap[language.toLowerCase()];
-    if (!langId) return { error: "Unsupported language selected." };
-
-    try {
-      const response = await fetch(JUDGE0_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-RapidAPI-Key': JUDGE0_API_KEY,
-          'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
-        },
-        body: JSON.stringify({
-          language_id: langId,
-          source_code: code,
-          stdin: input,
-        }),
-      });
-      const result = await response.json();
-      return result;
-    } catch (err) {
-      return { error: err.message };
+  const getVersion = (lang) => {
+    switch (lang) {
+      case 'javascript': return '1.32.3';
+      case 'cpp': return '10.2.0';
+      case 'java': return '15.0.2';
+      case 'python': return '3.10.0';
+      default: return '';
     }
   };
 
   const handleRunCode = async () => {
-    if (!file) return;
-    const lang = file.language.toLowerCase();
-    const output = [];
+    const lang = file?.language?.toLowerCase();
 
-    if (lang === 'javascript') {
-      try {
-        const log = (...args) => output.push({ type: 'log', message: args.join(' ') });
-        const warn = (...args) => output.push({ type: 'warn', message: args.join(' ') });
-        const error = (...args) => output.push({ type: 'error', message: args.join(' ') });
-
-        const customConsole = { log, warn, error };
-        const run = new Function('console', file.content);
-        run(customConsole);
-        output.push({ type: 'success', message: '✅ Code executed successfully!' });
-      } catch (err) {
-        output.push({ type: 'error', message: err.message });
-      }
-      setLogs(output);
-    } else if (['cpp', 'java', 'python'].includes(lang)) {
-      if (lang === 'python') {
-        const prompts = parsePythonInputPrompts(file.content);
-        if (prompts.length > 0) {
-          setRequiresInput(true);
-          setInputPrompts(prompts);
-          setCurrentPromptIndex(0);
-          setCollectedInputs([]);
-          setIsMultiLineInput(false);
-          setLogs([{ type: 'log', message: '⚠️ Please enter inputs for the prompts one by one.' }]);
-          return;
-        }
-      }
-
-      if (lang === 'cpp' || lang === 'java') {
-        const prompts = parseJavaCppPrompts(file.content);
-        if (prompts.length > 0) {
-          setRequiresInput(true);
-          setInputPrompts(prompts);
-          setCurrentPromptIndex(0);
-          setCollectedInputs([]);
-          setIsMultiLineInput(false);
-          setLogs([{ type: 'log', message: '⚠️ Please enter inputs for the prompts one by one.' }]);
-          return;
-        } else if (codeNeedsInput(file.content)) {
-          setRequiresInput(true);
-          setIsMultiLineInput(true);
-          setLogs([{ type: 'log', message: '⚠️ Please enter all inputs line by line.' }]);
-          return;
-        }
-      }
-
-      setLogs([{ type: 'log', message: '⏳ Running code...' }]);
-      const result = await runWithJudge0(lang, file.content, inputValue);
-
-      if (result.error) {
-        output.push({ type: 'error', message: `❌ ${result.error}` });
-      } else if (result.compile_output) {
-        output.push({ type: 'error', message: result.compile_output });
-      } else if (result.stderr) {
-        output.push({ type: 'error', message: result.stderr });
-      } else {
-        output.push({ type: 'log', message: result.stdout || '✅ No output' });
-        output.push({ type: 'success', message: '✅ Code executed successfully!' });
-      }
-
-      setLogs(output);
-    } else {
-      const htmlFile = files.find(f => f.language === 'html');
-      const cssFile = files.find(f => f.language === 'css');
-      const jsFile = files.find(f => f.language === 'javascript');
-
-      const html = htmlFile?.content || '';
-      const css = cssFile?.content || '';
-      const js = jsFile?.content || '';
+    if (lang === 'html') {
+      const html = files.find(f => f.language === 'html')?.content || '';
+      const css = files.find(f => f.language === 'css')?.content || '';
+      const js = files.find(f => f.language === 'javascript')?.content || '';
 
       const withCSS = html.replace(/<\/head>/i, `<style>${css}</style></head>`);
       const finalDoc = withCSS.replace(/<\/body>/i, `<script>${js}</script></body>`);
-
       setPreviewHTML(finalDoc);
+      return;
+    }
+
+    if (!['javascript', 'python', 'cpp', 'java'].includes(lang)) {
+      setLogs([{ type: 'error', message: `❌ Unsupported language: ${lang}` }]);
+      return;
+    }
+
+    setLogs([{ type: 'log', message: '⏳ Running your code...' }]);
+
+    try {
+      const res = await fetch('https://emkc.org/api/v2/piston/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          language: lang,
+          version: getVersion(lang),
+          files: [{ name: `file.${getExtension(lang)}`, content }],
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`API error: ${res.status} ${res.statusText}`);
+      }
+
+      const result = await res.json();
+      const logs = [];
+
+      if (result.run.stdout) {
+        logs.push({ type: 'log', message: result.run.stdout.trim() });
+      }
+
+      if (result.run.stderr) {
+        logs.push({ type: 'error', message: result.run.stderr.trim() });
+      }
+
+      if (result.run.stdout && !result.run.stderr) {
+        logs.push({ type: 'log', message: '✅ Code executed successfully!' });
+      }
+
+      if (logs.length === 0) {
+        logs.push({ type: 'log', message: '✅ No output' });
+      }
+
+      setLogs(logs);
+    } catch (err) {
+      setLogs([{ type: 'error', message: `❌ Error: ${err.message}` }]);
     }
   };
+
 
   const handleSaveCode = async () => {
     try {
       const res = await fetch(`${BASE_URL}/saveCode`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ fileId: file._id, content })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ fileId: file._id, content }),
       });
+
       if (res.ok) {
-        setEditorData((prev) => {
-          const updatedFiles = prev.files.map(f => f._id === file._id ? { ...f, content } : f);
-          return { ...prev, files: updatedFiles };
-        });
-        toast.success("Code saved successfully!");
+        setEditorData(prev => ({
+          ...prev,
+          files: prev.files.map(f => f._id === file._id ? { ...f, content } : f)
+        }));
+        toast.success('Code saved');
       }
-    } catch (error) {
-      toast.error("An error occurred while saving the code!");
+    } catch {
+      toast.error('❌ Failed to save code');
     }
   };
 
-  useEffect(() => {
-    if (!file) return;
-    const lang = file.language.toLowerCase();
-
-    if (!requiresInput && inputValue.trim() !== '') {
-      const runCodeWithInput = async () => {
-        setLogs([{ type: 'log', message: '⏳ Running code with input...' }]);
-        const result = await runWithJudge0(lang, file.content, inputValue);
-        const output = [];
-
-        if (result.error) {
-          output.push({ type: 'error', message: `❌ ${result.error}` });
-        } else if (result.compile_output) {
-          output.push({ type: 'error', message: result.compile_output });
-        } else if (result.stderr) {
-          output.push({ type: 'error', message: result.stderr });
-        } else {
-          let filteredOutput = result.stdout || '';
-          inputPrompts.forEach(prompt => {
-            const escapedPrompt = prompt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const promptRegex = new RegExp(escapedPrompt, 'g');
-            filteredOutput = filteredOutput.replace(promptRegex, '');
-          });
-          output.push({ type: 'log', message: filteredOutput.trim() || '✅ No output' });
-          output.push({ type: 'success', message: '✅ Code executed successfully!' });
-        }
-
-        setLogs(output);
-        setInputValue('');
-      };
-
-      if (['cpp', 'java', 'python'].includes(lang)) {
-        runCodeWithInput();
-      }
-    }
-  }, [inputValue, requiresInput, file?.content]);
-
-  if (!file) {
-    return (
-      <div className="editor-panel empty">
-        <p>Select or create a file to start coding...</p>
-      </div>
-    );
-  }
+  if (!file) return <div className="editor-panel empty"><p>No file selected</p></div>;
 
   return (
-    <div className="editor-panel">
+    <div className={`editor-panel ${previewMode === "editor" ? "editor-fullWidth" : "" || previewMode === "split" ? "editor-halfWidth" : "" || previewMode === "preview" ? "hide-editor" : ""}`}>
       <div className="editor-header">
         <span><FaCode /> {file.filename}</span>
         <div className="action-btns">
           <button className="run-btn" onClick={handleRunCode}>▶ Run</button>
           <div className="save-code-btn" onClick={handleSaveCode}>Save</div>
+          <FiMaximize size={24} title="Full Editor View" onClick={() =>setPreviewMode("editor")} />
+          <FiSidebar size={24} title="Split View" onClick={() =>setPreviewMode("split")} />
         </div>
       </div>
       <Editor
         height="100%"
         language={file.language.toLowerCase()}
         value={content}
-        onChange={(value) => setContent(value)}
+        onChange={(val) => setContent(val)}
         onMount={(editor, monaco) => {
           monaco.editor.defineTheme('codask-dark', {
             base: 'vs-dark',
@@ -279,12 +163,7 @@ const EditorPanel = ({
           monaco.editor.setTheme('codask-dark');
         }}
         theme="codask-dark"
-        options={{
-          fontSize: 14,
-          minimap: { enabled: false },
-          fontFamily: 'Fira Code',
-          automaticLayout: true,
-        }}
+        options={{ fontSize: 14, minimap: { enabled: false }, fontFamily: 'Fira Code', automaticLayout: true }}
       />
     </div>
   );

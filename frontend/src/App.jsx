@@ -10,6 +10,7 @@ import { Context } from './components/context/context'
 import Loader from './components/Loader/Loader'
 import ProtectedRoute from './components/ProtectedRoute'
 import Editor from './pages/Editor/Editor'
+import ProjectDetails from './pages/ProjectDetails/ProjectDetails'
 
 const App = () => {
 
@@ -33,7 +34,8 @@ const App = () => {
         <Route element={<ProtectedRoute />} >
           <Route path='/dashboard' element={<Dashboard />} />
           <Route path='/editor/:id' element = {<Editor/>}/>
-        </Route>
+          <Route path='/projectDetail/:id' element = {<ProjectDetails/>} />
+          </Route>
       </Routes>
       <Toaster position='top-center' richColors />
     </div>
