@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { useNavigate } from "react-router-dom"
 import './Projects.css';
 import { FaPlus, FaEdit, FaTrashAlt, FaChevronDown } from 'react-icons/fa';
-import { FiCopy } from 'react-icons/fi';
+import { FiCopy, FiExternalLink } from 'react-icons/fi';
 import { MdClose } from 'react-icons/md';
 import { Context } from '../../components/context/context';
 import { toast } from "sonner"
@@ -37,7 +37,7 @@ const Projects = () => {
         headers: {
           "Content-Type": "application/json"
         },
-        credentials: "include",
+        credentials: "include", 
         body: JSON.stringify({ title, description, language, isSolo })
       })
       if (res.ok) {
@@ -57,17 +57,17 @@ const Projects = () => {
     }
   }
 
-  const handleDeleteProject = async (id) =>{
+  const handleDeleteProject = async (id) => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/deleteProject/${id}`,{
-        method:"DELETE",
-        headers:{
-          'Content-Type':"application/json"
+      const res = await fetch(`${BASE_URL}/deleteProject/${id}`, {
+        method: "DELETE",
+        headers: {
+          'Content-Type': "application/json"
         },
-        credentials:"include"
+        credentials: "include"
       })
-      if(res.ok){
+      if (res.ok) {
         getLoggedInUser();
         toast.success("Project deleted Successfully!");
       }
@@ -75,9 +75,15 @@ const Projects = () => {
       toast.error("Server error");
       console.log(error);
     }
-    finally{
+    finally {
       setLoading(false)
     }
+  }
+
+  const calculateProgress = (tasks) =>{
+    if(!tasks || tasks.length === 0) return 0;
+    const completed = tasks.filter(task => task.status === "Completed").length;
+    return Math.round((completed/tasks.length)*100);
   }
 
   if (loading) {
@@ -116,37 +122,40 @@ const Projects = () => {
         {
           user?.projects?.length > 0 ?
             (
-              user.projects.map(project => (
-                <div key={project._id} className="project-card">
-                  <h3>
-                    {project.title}
-                    <FiCopy fontSize={24}
-                      className="copy-icon"
-                      title="Copy Project ID"
-                      onClick={() => {
-                        navigator.clipboard.writeText(project._id);
-                        toast.success("Project ID copied!");
-                      }}
-                    />
-                  </h3>
-                  <p>{project.description.length > 70 ? project.description.slice(0, 70) + "..." : project.description}</p>
-                  <div className="progress-bar">
-                    <div className="fill" style={{ width: `${project.progress}%` }}></div>
+              user.projects.map(project => {
+                const progress = calculateProgress(project.tasks);
+                return (
+                  <div key={project._id} className="project-card">
+                    <h3>
+                      {project.title}
+                      <FiCopy fontSize={24}
+                        className="copy-icon"
+                        title="Copy Project ID"
+                        onClick={() => {
+                          navigator.clipboard.writeText(project._id);
+                          toast.success("Project ID copied!");
+                        }}
+                      />
+                    </h3>
+                    <p>{project.description.length > 70 ? project.description.slice(0, 70) + "..." : project.description}</p>
+                    <div className="progress-bar">
+                      <div className="fill" style={{ width: `${progress}%` }}></div>
+                    </div>
+                    <p className='progress-label'>{progress}% Complete</p>
+                    <div className="actions">
+                      <button className="btn edit" onClick={() => getProject(project._id)}>
+                        <FiExternalLink /> Open Project
+                      </button>
+                      <button className="btn delete" onClick={() => handleDeleteProject(project._id)}>
+                        <FaTrashAlt /> Delete
+                      </button>
+                      <button className="btn details" onClick={() => navigate(`/projectDetail/${project._id}`)}>
+                        Details
+                      </button>
+                    </div>
                   </div>
-                  <p className='progress-label'>{project.progress}% Complete</p>
-                  <div className="actions">
-                    <button className="btn edit" onClick={() => getProject(project._id)}>
-                      <FaEdit /> Edit
-                    </button>
-                    <button className="btn delete" onClick={() =>handleDeleteProject(project._id)}>
-                      <FaTrashAlt /> Delete
-                    </button>
-                    <button className="btn details" onClick={() => navigate(`/projectDetail/${project._id}`)}>
-                      Details
-                    </button>
-                  </div>
-                </div>
-              ))
+                )
+              })
             ) : (
               <p className='no-proj-found'>No Projects found.</p>
             )

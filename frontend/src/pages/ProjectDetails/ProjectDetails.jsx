@@ -20,8 +20,6 @@ const ProjectDetails = () => {
         priority: 'medium'
     });
 
-    const pendingTasksCount = {};
-
     const fetchProject = async () => {
         try {
             const res = await fetch(`${BASE_URL}/project/${id}`, {
@@ -72,6 +70,12 @@ const ProjectDetails = () => {
         }
     };
 
+    const getProgress = () =>{
+        if(!project.tasks || project.tasks === 0) return 0;
+        const completed = project.tasks.filter(task => task.status === "Completed").length;
+        return Math.round((completed/project.tasks.length)*100);
+    }
+
     if (!project) return <Loader />
 
     return (
@@ -85,9 +89,9 @@ const ProjectDetails = () => {
                 <div className="progress-wrapper">
                     <label>Progress</label>
                     <div className="progress-bar">
-                        <div className="fill" style={{ width: `${project.progress}%` }}></div>
+                        <div className="fill" style={{ width: `${getProgress()}%` }}></div>
                     </div>
-                    <span>{project.progress}%</span>
+                    <span>{getProgress()}%</span>
                 </div>
                 <div className="project-meta">
                     <span><strong>Lead:</strong> {project.lead?.username}</span>
@@ -112,9 +116,6 @@ const ProjectDetails = () => {
                                             <div className="user-info">
                                                 <h3 className="username">{member.userId.username}</h3>
                                                 <p className="email">{member.userId.email}</p>
-                                                <span className="pending-count">
-                                                    Pending Tasks: {pendingTasksCount[member.userId._id] || 0}
-                                                </span>
                                             </div>
                                         </div>
                                         <div className="card-footer">

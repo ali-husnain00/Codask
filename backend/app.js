@@ -112,7 +112,12 @@ app.get("/getLoggedInUser", verifyToken, async (req, res) => {
     const existingUser = await user
       .findById(userId)
       .select("-password")
-      .populate("projects");
+      .populate({
+        path: "projects",
+        populate: {
+          path: "tasks",
+        },
+      });
 
     if (!existingUser) {
       return res.status(404).send("User not found!");
@@ -208,7 +213,8 @@ app.get("/project/:id", verifyToken, async (req, res) => {
       .findById(id)
       .populate({ path: "members.userId", select: "username email" })
       .populate("lead")
-      .populate("files");
+      .populate("files")
+      .populate("tasks");
     if (!existingProject) {
       return res.status(404).send("Project not found!");
     }
@@ -298,42 +304,47 @@ app.post("/send-invite", verifyToken, async (req, res) => {
 
   try {
     if (!projectId || !receiverEmail) {
-      return res.status(400).json({msg:"Project ID and receiver email are required!"});
+      return res
+        .status(400)
+        .json({ msg: "Project ID and receiver email are required!" });
     }
 
     const senderUser = await user.findById(userId);
     const receiverUser = await user.findOne({ email: receiverEmail });
 
     if (!senderUser || !receiverUser) {
-      return res.status(400).json({msg:"Sender or receiver user not found!"});
+      return res
+        .status(400)
+        .json({ msg: "Sender or receiver user not found!" });
     }
 
     const proj = await project.findById(projectId);
     if (!proj) {
-      return res.status(404).json({msg:"Project not found!"});
+      return res.status(404).json({ msg: "Project not found!" });
     }
 
     if (proj.lead.toString() !== userId) {
-      return res.status(403).json({msg:"Only the project lead can send invites."});
+      return res
+        .status(403)
+        .json({ msg: "Only the project lead can send invites." });
     }
 
     const newInvite = await invite.create({
       projectId,
       from: userId,
       to: receiverUser._id,
-      status: "pending", 
+      status: "pending",
     });
 
     receiverUser.invites.push(newInvite._id);
     await receiverUser.save();
 
-    res.status(200).json({msg:"Invite sent successfully!"});
+    res.status(200).json({ msg: "Invite sent successfully!" });
   } catch (error) {
     console.log(error);
-    res.status(500).json({msg:"An error occurred while sending invite"});
+    res.status(500).json({ msg: "An error occurred while sending invite" });
   }
 });
-
 
 app.get("/getInvites", verifyToken, async (req, res) => {
   const userId = req.user.id;
@@ -379,7 +390,7 @@ app.post("/respondInvite", verifyToken, async (req, res) => {
           (member) => member.userId.toString() === userId
         );
         if (!alreadyMember) {
-          proj.members.push({ userId: userId, role: "developer" }); 
+          proj.members.push({ userId: userId, role: "developer" });
           await proj.save();
         }
         inv.status = "accepted";
@@ -405,7 +416,7 @@ app.post("/respondInvite", verifyToken, async (req, res) => {
 
 app.delete("/deleteProject/:id", verifyToken, async (req, res) => {
   const projectId = req.params.id;
-  const userId = req.user.id; 
+  const userId = req.user.id;
 
   try {
     const existingUser = await user.findById(userId);
@@ -419,7 +430,9 @@ app.delete("/deleteProject/:id", verifyToken, async (req, res) => {
     }
 
     if (proj.lead.toString() !== userId) {
-      return res.status(403).send("Only the project lead can delete the project.");
+      return res
+        .status(403)
+        .send("Only the project lead can delete the project.");
     }
 
     await project.findByIdAndDelete(projectId);
@@ -437,24 +450,31 @@ app.delete("/deleteProject/:id", verifyToken, async (req, res) => {
 });
 
 app.post("/assignTask", verifyToken, async (req, res) => {
-  const { title, description, assignedTo, dueDate, priority, projectId } = req.body;
+  const { title, description, assignedTo, dueDate, priority, projectId } =
+    req.body;
   const userId = req.user.id;
 
   try {
     const existingUser = await user.findById(userId);
-    if (!existingUser) return res.status(404).json({msg:"User not found!"});
+    if (!existingUser) return res.status(404).json({ msg: "User not found!" });
 
     const existingProject = await project.findById(projectId);
-    if (!existingProject) return res.status(404).json({msg:"Project not found!"});
+    if (!existingProject)
+      return res.status(404).json({ msg: "Project not found!" });
 
-    const lead = existingProject.members.find(memb => memb.role === "Project lead");
+    const lead = existingProject.members.find(
+      (memb) => memb.role === "Project lead"
+    );
 
-    if(existingUser._id.toString() !== lead.userId.toString()){
-      return res.status(403).send({msg:"Only project lead can assign tasks!"})
+    if (existingUser._id.toString() !== lead.userId.toString()) {
+      return res
+        .status(403)
+        .send({ msg: "Only project lead can assign tasks!" });
     }
 
     const assignedUser = await user.findById(assignedTo);
-    if (!assignedUser) return res.status(404).json({msg:"Assigned user not found!"});
+    if (!assignedUser)
+      return res.status(404).json({ msg: "Assigned user not found!" });
 
     const newTask = await task.create({
       projectId,
@@ -468,14 +488,60 @@ app.post("/assignTask", verifyToken, async (req, res) => {
     existingProject.tasks.push(newTask._id);
     await existingProject.save();
 
-    res.status(200).json({msg:"Task assigned successfully!"});
+    res.status(200).json({ msg: "Task assigned successfully!" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({msg:"An error occurred while assigning the task"});
+    res.status(500).json({ msg: "An error occurred while assigning the task" });
   }
 });
 
+app.get("/getUserTasks", verifyToken, async (req, res) => {
+  const userId = req.user.id;
 
+  try {
+    const existingUser = await user.findById(userId);
+    if (!existingUser) {
+      return res.status(404).json({ msg: "User not found!" });
+    }
+
+    const tasks = await task.find({ assignedTo: userId }).populate({
+      path: "projectId",
+      select: "title lead",
+      populate: {
+        path: "lead",
+        select: "username email",
+      },
+    });
+    res.status(200).json(tasks);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: "An error occurred while getting user tasks" });
+  }
+});
+
+app.patch("/updateTaskStatus/:id", verifyToken, async (req, res) => {
+  const taskId = req.params.id;
+  const { status } = req.body;
+
+  if (!["Pending", "In Progress", "Completed"].includes(status)) {
+    return res.status(400).json({ msg: "Invalid status" });
+  }
+
+  try {
+    const updatedTask = await task.findByIdAndUpdate(
+      taskId,
+      { status },
+      { new: true }
+    );
+
+    if (!updatedTask) return res.status(404).json({ msg: "Task not found" });
+
+    res.status(200).json({ msg: "Status updated", task: updatedTask });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: "Failed to update task status" });
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
