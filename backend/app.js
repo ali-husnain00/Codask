@@ -13,6 +13,17 @@ import project from "./models/project.js";
 import crypto from "crypto";
 import invite from "./models/invite.js";
 import task from "./models/task.js";
+import { Server } from "socket.io";
+import http from "http";
+import message from "./models/message.js";
+
+const server = http.createServer(app);
+const io = new Server(server,{
+  cors:{
+    origin: "http://localhost:5173",
+    credentials: true,
+  }
+})
 
 dotenv.config();
 connectDB();
@@ -24,6 +35,42 @@ app.use(
     credentials: true,
   })
 );
+
+io.on("connection", (socket) =>{
+  console.log("User connected: ", socket.id)
+
+  socket.on("joinRoom", (projectId) =>{
+    socket.join(projectId);
+    console.log(`User ${socket.id} joined the room ${projectId}`)
+  })
+
+  socket.on("sentMessage", async (data) => {
+  const { projectId, sender, content } = data; 
+
+  if (!projectId || !sender || !content) {
+    console.error("Missing required fields in socket message");
+    return;
+  }
+
+  try {
+    const savedMessage = await message.create({
+      projectId,
+      sender,
+      content,
+    });
+
+    const fullMessage = await savedMessage.populate("sender", "username");
+
+    io.to(projectId).emit("receiveMessage", fullMessage);
+  } catch (err) {
+    console.error("Failed to send message:", err);
+  }
+});
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
+})
 
 app.get("/", (req, res) => {
   res.send("App is working");
@@ -519,6 +566,21 @@ app.get("/getUserTasks", verifyToken, async (req, res) => {
   }
 });
 
+const updateProjectProgress = async (projectId) => {
+  const proj = await project.findById(projectId).populate("tasks");
+  if (!proj) return;
+
+  const total = proj.tasks.length;
+  if (total === 0) {
+    proj.progress = 0;
+  } else {
+    const completed = proj.tasks.filter(t => t.status === "Completed").length;
+    proj.progress = Math.round((completed / total) * 100);
+  }
+
+  await proj.save();
+};
+
 app.patch("/updateTaskStatus/:id", verifyToken, async (req, res) => {
   const taskId = req.params.id;
   const { status } = req.body;
@@ -536,6 +598,8 @@ app.patch("/updateTaskStatus/:id", verifyToken, async (req, res) => {
 
     if (!updatedTask) return res.status(404).json({ msg: "Task not found" });
 
+    await updateProjectProgress(updatedTask.projectId);
+
     res.status(200).json({ msg: "Status updated", task: updatedTask });
   } catch (error) {
     console.error(error);
@@ -543,7 +607,34 @@ app.patch("/updateTaskStatus/:id", verifyToken, async (req, res) => {
   }
 });
 
+app.get("/getMessages", verifyToken, async (req, res) => {
+  const { projectId } = req.query;
+
+  if (!projectId) {
+    return res.status(400).send("Project ID is required");
+  }
+
+  try {
+    const existingProject = await project.findById(projectId);
+    if (!existingProject) {
+      return res.status(404).send("Project not found");
+    }
+
+    const allMessages = await message
+      .find({ projectId })
+      .populate("sender", "username");
+
+    res.status(200).json(allMessages);
+  } catch (error) {
+    console.error("Error fetching messages:", error);
+    res
+      .status(500)
+      .send("An error occurred while retrieving the previous messages");
+  }
+});
+
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

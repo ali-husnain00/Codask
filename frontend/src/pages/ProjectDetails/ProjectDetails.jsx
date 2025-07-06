@@ -21,6 +21,7 @@ const ProjectDetails = () => {
     });
 
     const fetchProject = async () => {
+        setLoading(true)
         try {
             const res = await fetch(`${BASE_URL}/project/${id}`, {
                 method: "GET",
@@ -34,6 +35,9 @@ const ProjectDetails = () => {
             }
         } catch (err) {
             toast.error("An error occurred while fetching project");
+        }
+        finally{
+            setLoading(false)
         }
     };
 
@@ -70,13 +74,7 @@ const ProjectDetails = () => {
         }
     };
 
-    const getProgress = () =>{
-        if(!project.tasks || project.tasks === 0) return 0;
-        const completed = project.tasks.filter(task => task.status === "Completed").length;
-        return Math.round((completed/project.tasks.length)*100);
-    }
-
-    if (!project) return <Loader />
+    if (!project || loading) return <Loader />
 
     return (
         <div className="project-details-page">
@@ -89,9 +87,9 @@ const ProjectDetails = () => {
                 <div className="progress-wrapper">
                     <label>Progress</label>
                     <div className="progress-bar">
-                        <div className="fill" style={{ width: `${getProgress()}%` }}></div>
+                        <div className="fill" style={{ width: `${project.progress}%` }}></div>
                     </div>
-                    <span>{getProgress()}%</span>
+                    <span>{project.progress}%</span>
                 </div>
                 <div className="project-meta">
                     <span><strong>Lead:</strong> {project.lead?.username}</span>

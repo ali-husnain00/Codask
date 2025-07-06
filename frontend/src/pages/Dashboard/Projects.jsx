@@ -80,12 +80,6 @@ const Projects = () => {
     }
   }
 
-  const calculateProgress = (tasks) =>{
-    if(!tasks || tasks.length === 0) return 0;
-    const completed = tasks.filter(task => task.status === "Completed").length;
-    return Math.round((completed/tasks.length)*100);
-  }
-
   if (loading) {
     return <Loader />
   }
@@ -123,7 +117,6 @@ const Projects = () => {
           user?.projects?.length > 0 ?
             (
               user.projects.map(project => {
-                const progress = calculateProgress(project.tasks);
                 return (
                   <div key={project._id} className="project-card">
                     <h3>
@@ -139,9 +132,9 @@ const Projects = () => {
                     </h3>
                     <p>{project.description.length > 70 ? project.description.slice(0, 70) + "..." : project.description}</p>
                     <div className="progress-bar">
-                      <div className="fill" style={{ width: `${progress}%` }}></div>
+                      <div className="fill" style={{ width: `${project.progress}%` }}></div>
                     </div>
-                    <p className='progress-label'>{progress}% Complete</p>
+                    <p className='progress-label'>{project.progress}% Complete</p>
                     <div className="actions">
                       <button className="btn edit" onClick={() => getProject(project._id)}>
                         <FiExternalLink /> Open Project

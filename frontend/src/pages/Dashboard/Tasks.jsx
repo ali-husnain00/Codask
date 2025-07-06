@@ -5,55 +5,72 @@ import { useEffect } from 'react'
 import { useContext } from 'react'
 import { Context } from '../../components/context/context'
 import { toast } from 'sonner'
+import Loader from '../../components/Loader/Loader'
 
 const Tasks = () => {
   const [tasks, setTasks] = useState(null)
   const [filter, setFilter] = useState('Pending');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const {BASE_URL} = useContext(Context);
+  const { BASE_URL, getLoggedInUser } = useContext(Context);
 
   const filters = ['Pending', 'In Progress', 'Completed'];
 
   const filteredTasks = tasks ? tasks.filter(task => task.status === filter) : [];
 
-const handleStatusChange = async (id, newStatus) => {
-  try {
-    const res = await fetch(`${BASE_URL}/updateTaskStatus/${id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      credentials: "include",
-      body: JSON.stringify({ status: newStatus })
-    });
+  const handleStatusChange = async (id, newStatus) => {
+    setLoading(true)
+    try {
+      const res = await fetch(`${BASE_URL}/updateTaskStatus/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify({ status: newStatus })
+      });
 
-    const data = await res.json();
-
-    if (res.ok) {
-      fetchTasks();
-      toast.success(data.msg)
-    } 
-  } catch (err) {
-    toast.error(data.msg)
-    console.error("Error updating status:", err);
-  }
-};
-
- const fetchTasks = async () => {
-    const res = await fetch(`${BASE_URL}/getUserTasks`, {
-      method: "GET",
-      credentials: "include",
-    });
-
-    if (res.ok) {
       const data = await res.json();
-      setTasks(data); 
+
+      if (res.ok) {
+        fetchTasks();
+        getLoggedInUser();
+        toast.success(data.msg)
+      }
+    } catch (err) {
+      toast.error(data.msg)
+      console.error("Error updating status:", err);
+    }
+    finally {
+      setLoading(false)
+    }
+  };
+
+  const fetchTasks = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`${BASE_URL}/getUserTasks`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setTasks(data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+    finally {
+      setLoading(false)
     }
   };
 
   useEffect(() => {
-  fetchTasks();
-}, []);
+    fetchTasks();
+  }, []);
+
+  if(loading) return <Loader/>
 
   return (
     <div className="user-tasks-container">
