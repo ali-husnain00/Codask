@@ -18,12 +18,12 @@ import http from "http";
 import message from "./models/message.js";
 
 const server = http.createServer(app);
-const io = new Server(server,{
-  cors:{
+const io = new Server(server, {
+  cors: {
     origin: "http://localhost:5173",
     credentials: true,
-  }
-})
+  },
+});
 
 dotenv.config();
 connectDB();
@@ -36,41 +36,78 @@ app.use(
   })
 );
 
-io.on("connection", (socket) =>{
-  console.log("User connected: ", socket.id)
+const activeUsers = {};
 
-  socket.on("joinRoom", (projectId) =>{
-    socket.join(projectId);
-    console.log(`User ${socket.id} joined the room ${projectId}`)
-  })
+io.on("connection", (socket) => {
+  console.log("User connected: ", socket.id);
 
-  socket.on("sentMessage", async (data) => {
-  const { projectId, sender, content } = data; 
+  socket.on("joinRoom", ({ id, user }) => {
+    socket.join(id);
+    socket.projectId = id;
+    socket.userId = user._id;
+    console.log(`User ${user.username} joined the room ${id}`);
 
-  if (!projectId || !sender || !content) {
-    console.error("Missing required fields in socket message");
-    return;
-  }
+    if (!activeUsers[id]) {
+      activeUsers[id] = [];
+    }
 
-  try {
-    const savedMessage = await message.create({
-      projectId,
-      sender,
-      content,
-    });
+    const isAlreadyActive = activeUsers[id].some((u) => u.id == user._id);
 
-    const fullMessage = await savedMessage.populate("sender", "username");
+    if (!isAlreadyActive) {
+      if (!isAlreadyActive) {
+        activeUsers[id].push({ id: user._id, username: user.username });
+      }
+    }
 
-    io.to(projectId).emit("receiveMessage", fullMessage);
-  } catch (err) {
-    console.error("Failed to send message:", err);
-  }
+    io.to(id).emit("activeUserUpdate", activeUsers[id]);
+
+    socket.to(id).emit("userJoined", user);
+  });
+
+socket.on("typing", ({projectId, user}) => {
+  socket.to(projectId).emit("userTyping", user);
 });
 
+
+  socket.on("codeChange", (data) => {
+    const { projectId, fileId, content, senderId } = data;
+    socket.to(projectId).emit("codeUpdate", data);
+  });
+
+  socket.on("sentMessage", async (data) => {
+    const { projectId, sender, content } = data;
+
+    if (!projectId || !sender || !content) {
+      console.error("Missing required fields in socket message");
+      return;
+    }
+
+    try {
+      const savedMessage = await message.create({
+        projectId,
+        sender,
+        content,
+      });
+
+      const fullMessage = await savedMessage.populate("sender", "username");
+
+      io.to(projectId).emit("receiveMessage", fullMessage);
+    } catch (err) {
+      console.error("Failed to send message:", err);
+    }
+  });
+
   socket.on("disconnect", () => {
+    const { projectId, userId } = socket;
+    if (projectId && activeUsers[projectId]) {
+      activeUsers[projectId] = activeUsers[projectId].filter(
+        (u) => u.id !== userId
+      );
+      io.to(projectId).emit("activeUserUpdate", activeUsers[projectId]);
+    }
     console.log("User disconnected:", socket.id);
   });
-})
+});
 
 app.get("/", (req, res) => {
   res.send("App is working");
@@ -574,7 +611,7 @@ const updateProjectProgress = async (projectId) => {
   if (total === 0) {
     proj.progress = 0;
   } else {
-    const completed = proj.tasks.filter(t => t.status === "Completed").length;
+    const completed = proj.tasks.filter((t) => t.status === "Completed").length;
     proj.progress = Math.round((completed / total) * 100);
   }
 
@@ -632,7 +669,6 @@ app.get("/getMessages", verifyToken, async (req, res) => {
       .send("An error occurred while retrieving the previous messages");
   }
 });
-
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {

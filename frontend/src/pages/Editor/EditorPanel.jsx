@@ -7,9 +7,9 @@ import { toast } from 'sonner';
 import { FiMaximize } from 'react-icons/fi';
 import { FiSidebar } from 'react-icons/fi';
 
-const EditorPanel = ({ file, files, setPreviewHTML, setLogs, previewMode, setPreviewMode }) => {
+const EditorPanel = ({ file, files, setPreviewHTML, setLogs, previewMode, setPreviewMode, socket }) => {
   const [content, setContent] = useState('');
-  const { BASE_URL, setEditorData } = useContext(Context);
+  const { BASE_URL, setEditorData, user } = useContext(Context);
 
   useEffect(() => {
     if (file) setContent(file.content || '');
@@ -118,6 +118,35 @@ const EditorPanel = ({ file, files, setPreviewHTML, setLogs, previewMode, setPre
     }
   };
 
+  useEffect(() =>{
+    if(!socket) return;
+
+    const handleCodeUpdate = (update) =>{
+      if(update.fileId === file._id && update.senderId !== user._id){
+        setContent(update.content);
+      }
+    }
+
+    socket.on("codeUpdate", handleCodeUpdate);
+
+    return () =>{
+      socket.off("codeUpdate", handleCodeUpdate)
+    }
+  },[file, socket, user])
+
+  const onContentChange = (newContent) =>{
+    setContent(newContent);
+    if(socket && file){
+      socket.emit("codeChange", {
+      projectId:file.projectId,
+      fileId:file._id,
+      content:newContent,
+      senderId:user._id,
+    })
+     socket.emit("typing", {projectId: file.projectId, user});
+    }
+}
+
   if (!file) return <div className="editor-panel empty"><p>No file selected</p></div>;
 
   return (
@@ -135,7 +164,7 @@ const EditorPanel = ({ file, files, setPreviewHTML, setLogs, previewMode, setPre
         height="100%"
         language={file.language.toLowerCase()}
         value={content}
-        onChange={(val) => setContent(val)}
+        onChange={onContentChange}
         onMount={(editor, monaco) => {
           monaco.editor.defineTheme('codask-dark', {
             base: 'vs-dark',

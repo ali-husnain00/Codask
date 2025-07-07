@@ -3,6 +3,7 @@ import './Login.css';
 import { toast } from 'sonner';
 import { Link, useNavigate } from 'react-router-dom';
 import { Context } from '../../components/context/context';
+import Loader from '../../components/Loader/Loader';
 
 const Login = () => {
 
@@ -11,10 +12,11 @@ const Login = () => {
 
   const {BASE_URL, getLoggedInUser} = useContext(Context);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false)
 
   const handleLogin = async (e) =>{
     e.preventDefault();
-
+    setLoading(true)
     try {
       const res = await fetch(`${BASE_URL}/login`,{
         method:"POST",
@@ -25,7 +27,7 @@ const Login = () => {
         credentials:"include"
       })
       if(res.ok){
-        getLoggedInUser();
+        await getLoggedInUser();
         toast.success("Login successful!");
         setTimeout(() =>{
           navigate("/dashboard")
@@ -37,6 +39,13 @@ const Login = () => {
     } catch (error) {
       console.log(error)
     }
+    finally{
+      setLoading(false)
+    }
+  }
+
+  if(loading){
+    return <Loader/>
   }
 
   return (

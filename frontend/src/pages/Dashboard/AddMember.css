@@ -1,5 +1,4 @@
 .add-member-panel {
-    background: var(--bg-panel);
     display: flex;
     flex-direction: column;
     gap: 30px;
@@ -8,7 +7,6 @@
     border-radius: 12px;
     font-family: var(--font-ui);
     color: var(--text);
-    box-shadow: 0 0 10px rgba(20, 200, 255, 0.1);
     animation: fadeIn 0.4s ease-in-out;
 }
 
@@ -57,7 +55,7 @@
 .user-card {
     display: flex;
     align-items: center;
-    background: var(--bg-main);
+    background: var(--bg-panel);
     padding: 1rem;
     border-radius: 10px;
     transition: transform 0.2s;
@@ -76,13 +74,12 @@
     width: 45px;
     height: 45px;
     border-radius: 50%;
-    background: var(--text-muted);
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
     font-size: 1.2rem;
-    color: var(--bg-main);
+    color: white;
 }
 
 .user-info {

@@ -23,6 +23,8 @@ const Editor = () => {
   const [loading, setLoading] = useState(true);
   const [previewHTML, setPreviewHTML] = useState("");
   const [logs, setLogs] = useState([]);
+  const [activeUsers, setActiveUsers] = useState([]);
+  const [typingUser, setTypingUser] = useState(null);
 
   // Chat modal state
   const [chatOpen, setChatOpen] = useState(false);
@@ -56,26 +58,26 @@ const Editor = () => {
   };
 
   const fetchPreviousMessages = async () => {
-  try {
-    const res = await fetch(`${BASE_URL}/getMessages?projectId=${id}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-    });
+    try {
+      const res = await fetch(`${BASE_URL}/getMessages?projectId=${id}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
 
-    if (!res.ok) {
-      throw new Error("Failed to fetch messages");
+      if (!res.ok) {
+        throw new Error("Failed to fetch messages");
+      }
+
+      const messages = await res.json();
+      setChatMessages(messages);
+    } catch (err) {
+      toast.error("Could not load previous messages");
+      console.error("Fetch messages error:", err);
     }
-
-    const messages = await res.json();
-    setChatMessages(messages);
-  } catch (err) {
-    toast.error("Could not load previous messages");
-    console.error("Fetch messages error:", err);
-  }
-};
+  };
 
   useEffect(() => {
     fetchProject();
@@ -92,11 +94,27 @@ const Editor = () => {
     const newSocket = io(SOCKET_SERVER_URL);
     setSocket(newSocket);
 
-    newSocket.emit("joinRoom", id);
+    newSocket.emit("joinRoom", { id, user });
+
+    newSocket.on("userJoined", (user) => {
+      toast.info(`${user.username} joined!`)
+    })
 
     newSocket.on("receiveMessage", (Message) => {
       setChatMessages((prevMessages) => [...prevMessages, Message])
     })
+
+    newSocket.on("activeUserUpdate", (activeUsers) => {
+      setActiveUsers(activeUsers)
+    })
+
+    newSocket.on("userTyping", (user) => {
+      setTypingUser(user);
+
+      setTimeout(() =>{
+        setTypingUser(null)
+      },2500)
+    });
 
     return () => {
       newSocket.disconnect();
@@ -121,20 +139,20 @@ const Editor = () => {
     setChatInput("");
   };
 
-  const handleChatToggle = () =>{
-    if(!chatOpen){
+  const handleChatToggle = () => {
+    if (!chatOpen) {
       fetchPreviousMessages();
     }
     setChatOpen(prev => !prev);
   }
 
-  useEffect(() =>{
-    if(chatMessageEndRef.current){
-      chatMessageEndRef.current.scrollIntoView({behaviour:"smooth"})
+  useEffect(() => {
+    if (chatMessageEndRef.current) {
+      chatMessageEndRef.current.scrollIntoView({ behaviour: "smooth" })
     }
-  },[chatMessages])
+  }, [chatMessages])
 
-  const formatTimestamp = (timestamp) =>{
+  const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp);
     let hours = date.getHours();
     const minutes = date.getMinutes().toString().padStart(2, '0');
@@ -157,6 +175,8 @@ const Editor = () => {
         onNewFile={handleNewFile}
         projectId={id}
         fetchProject={fetchProject}
+        activeUsers={activeUsers}
+        typingUser = {typingUser}
       />
 
       <div className={`editor-main ${previewMode}`}>
@@ -169,6 +189,7 @@ const Editor = () => {
             setLogs={setLogs}
             previewMode={previewMode}
             setPreviewMode={setPreviewMode}
+            socket={socket}
           />
         )}
         {previewMode !== "editor" && (
@@ -219,16 +240,16 @@ const Editor = () => {
                   className={`chat-message-wrapper ${isMe ? "me" : "other"}`}
                 >
                   <div className="chat-bubble">
-                    <div className="chat-sender" style={{color:isMe ? "#003344" : "#A0A0A0"}}>{isMe ? "You" : msg.sender.username}</div>
+                    <div className="chat-sender" style={{ color: isMe ? "#003344" : "#A0A0A0" }}>{isMe ? "You" : msg.sender.username}</div>
                     <div className="msg-content">
-                    <div className="chat-content">{msg.content}</div>
-                    <div className="chat-timestamp" style={{color:isMe ? "#003344" : "#A0A0A0"}}>{formatTimestamp(msg.createdAt)}</div>
+                      <div className="chat-content">{msg.content}</div>
+                      <div className="chat-timestamp" style={{ color: isMe ? "#003344" : "#A0A0A0" }}>{formatTimestamp(msg.createdAt)}</div>
                     </div>
                   </div>
                 </div>
               );
             })}
-            <div ref={chatMessageEndRef}/>
+            <div ref={chatMessageEndRef} />
           </div>
 
           <div className="chat-input-area">

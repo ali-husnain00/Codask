@@ -1,16 +1,20 @@
 import React, { useContext, useState } from 'react';
 import { Context } from '../../components/context/context';
-import { FaFolderOpen, FaTasks, FaEnvelopeOpenText, FaUserPlus  } from "react-icons/fa";
-import "./Dashboard.css"; // for styling
+import { FaFolderOpen, FaTasks, FaEnvelopeOpenText, FaUserPlus } from "react-icons/fa";
+import { FiLogOut } from 'react-icons/fi';
+import "./Dashboard.css";
 import Projects from './Projects';
 import Tasks from './Tasks';
 import Invites from './Invites';
 import AddMember from './AddMember';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 
 const Dashboard = () => {
-  const { user } = useContext(Context);
+  const { user, BASE_URL, getLoggedInUser } = useContext(Context);
   const [activeComp, setActiveComp] = useState("projects");
+  const navigate = useNavigate()
 
   const renderComp = () => {
     switch (activeComp) {
@@ -19,7 +23,7 @@ const Dashboard = () => {
       case "tasks":
         return <Tasks />;
       case "add-member":
-        return <AddMember/>;
+        return <AddMember />;
       case "invites":
         return <Invites />;
       default:
@@ -27,38 +31,65 @@ const Dashboard = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/logout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include"
+      })
+      if (res.ok) {
+        toast.success("Logout successful!");
+        getLoggedInUser();
+        navigate("/login");
+      }
+    } catch (error) {
+      console.log("An error occured while logging out!")
+    }
+  }
+
   return (
     <div className='dashboard'>
       <aside className="sidebar">
-        <h2 className="sidebar-title">Codask</h2>
         <div className="user-section">
+          <div className="avat">{user.username[0]}</div>
           <span className="username">{user?.username}</span>
         </div>
         <ul className="sidebar-links">
-          <li
-            className={activeComp === "projects" ? "active" : ""}
-            onClick={() => setActiveComp("projects")}
-          >
-            <FaFolderOpen className="icon" /> Projects
-          </li>
-          <li
-            className={activeComp === "tasks" ? "active" : ""}
-            onClick={() => setActiveComp("tasks")}
-          >
-            <FaTasks className="icon" /> Tasks
-          </li>
-          <li
-            className={activeComp === "add-member" ? "active" : ""}
-            onClick={() => setActiveComp("add-member")}
-          >
-            <FaUserPlus className="icon" /> Add Members
-          </li>
-          <li
-            className={activeComp === "invites" ? "active" : ""}
-            onClick={() => setActiveComp("invites")}
-          >
-            <FaEnvelopeOpenText className="icon" /> Invites
-          </li>
+          <div className="top-links">
+            <li
+              className={activeComp === "projects" ? "active" : ""}
+              onClick={() => setActiveComp("projects")}
+            >
+              <FaFolderOpen className="icon" /> Projects
+            </li>
+            <li
+              className={activeComp === "tasks" ? "active" : ""}
+              onClick={() => setActiveComp("tasks")}
+            >
+              <FaTasks className="icon" /> Tasks
+            </li>
+            <li
+              className={activeComp === "add-member" ? "active" : ""}
+              onClick={() => setActiveComp("add-member")}
+            >
+              <FaUserPlus className="icon" /> Add Members
+            </li>
+            <li
+              className={activeComp === "invites" ? "active" : ""}
+              onClick={() => setActiveComp("invites")}
+            >
+              <FaEnvelopeOpenText className="icon" /> Invites
+            </li>
+          </div>
+          <div className="bottom-links">
+            <div className='logout-btn' onClick={handleLogout}>
+              <FiLogOut />
+              Logout
+            </div>
+          </div>
         </ul>
       </aside>
 

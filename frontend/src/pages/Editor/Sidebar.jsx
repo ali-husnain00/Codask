@@ -3,28 +3,29 @@ import './Sidebar.css';
 import { FaFileAlt, FaUser, FaPlus, FaTimes } from 'react-icons/fa';
 import { Context } from '../../components/context/context';
 import { toast } from 'sonner';
+import { useEffect } from 'react';
 
-const Sidebar = ({ files, members, onFileSelect, onNewFile, projectId, fetchProject }) => {
+const Sidebar = ({ files, members, onFileSelect, onNewFile, projectId, fetchProject, activeUsers, typingUser }) => {
   const [showModal, setShowModal] = useState(false);
   const [filename, setFilename] = useState('');
   const [language, setLanguage] = useState('javascript');
 
-  const {BASE_URL} = useContext(Context);
+  const { BASE_URL } = useContext(Context);
 
   const handleCreateFile = async (e) => {
     e.preventDefault();
     if (!filename.trim()) return;
 
     try {
-      const res = await fetch(`${BASE_URL}/createNewFile/${projectId}`,{
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json"
+      const res = await fetch(`${BASE_URL}/createNewFile/${projectId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
         },
-        credentials:"include",
-        body:JSON.stringify({filename, language})
+        credentials: "include",
+        body: JSON.stringify({ filename, language })
       })
-      if(res.ok){
+      if (res.ok) {
         const newFile = await res.json();
         onNewFile(newFile);
         fetchProject();
@@ -45,9 +46,28 @@ const Sidebar = ({ files, members, onFileSelect, onNewFile, projectId, fetchProj
       <div className="section">
         <h4>Team Members</h4>
         <ul>
-          {members?.map((member, idx) => (
-            <li key={idx}><FaUser /> {member.userId?.username || member.name}</li>
-          ))}
+          {
+            members?.map((member) => {
+              const isActive = activeUsers?.some(u => u.id === member.userId._id);
+              const isTyping = typingUser && typingUser._id === member.userId._id;
+
+              return (
+                <div className="member" key={member.userId._id}>
+                  <li>
+                    <FaUser />
+                    {member.userId.username}
+                    <span title={isActive ? "Online" : "Offline"} className={isActive ? "active" : "s"}>
+                      ●
+                    </span>
+                    {isTyping && (
+                      <span className="typing-indicator"> ✍️ typing...</span>
+                    )}
+                  </li>
+                </div>
+              );
+            })
+          }
+
         </ul>
       </div>
 
