@@ -12,7 +12,7 @@ import router from "./routes/routes.js";
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: "https://codask.netlify.app",
     credentials: true,
   },
 });
@@ -21,7 +21,7 @@ dotenv.config();
 connectDB();
 app.use(
   cors({
-    origin: "https://codask.netlify.app/",
+    origin: "https://codask.netlify.app",
     credentials: true,
   })
 );
