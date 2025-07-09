@@ -16,6 +16,10 @@ const Login = () => {
 
   const handleLogin = async (e) =>{
     e.preventDefault();
+    if(!email || !password){
+      toast.warning("All fields are required!")
+      return;
+    }
     setLoading(true)
     try {
       const res = await fetch(`${BASE_URL}/login`,{

@@ -47,6 +47,10 @@ const ProjectDetails = () => {
 
     const handleTaskAssign = async (e) => {
         e.preventDefault();
+        if(!t.title || !t.description || !t.assignedTo || !t.dueDate || !t.priority){
+            toast.warning("All fields are required!");
+            return;
+        }
         setLoading(true);
         try {
             const res = await fetch(`${BASE_URL}/assignTask`, {

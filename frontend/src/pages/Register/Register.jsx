@@ -16,6 +16,10 @@ const Register = () => {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    if(!username || !email || !password){
+      toast.warning("All fields are required!");
+      return;
+    }
     setLoading(true)
     try {
       const res = await fetch(`${BASE_URL}/register`, {

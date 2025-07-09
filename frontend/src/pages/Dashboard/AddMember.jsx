@@ -111,6 +111,7 @@ const AddMember = () => {
                             placeholder="Enter Project ID"
                             value={projectId}
                             onChange={(e) => setProjectId(e.target.value)}
+                            required
                         />
                         <div className="modal-actions">
                             <button className="cancel-btn" onClick={() => setShowModal(false)}>Cancel</button>

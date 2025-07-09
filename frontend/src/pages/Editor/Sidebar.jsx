@@ -15,7 +15,10 @@ const Sidebar = ({ files, members, onFileSelect, onNewFile, projectId, fetchProj
 
   const handleCreateFile = async (e) => {
     e.preventDefault();
-    if (!filename.trim()) return;
+    if (!filename.trim() || !language) {
+      toast.warning("All fields are required!");
+      return;
+    }
 
     try {
       const res = await fetch(`${BASE_URL}/createNewFile/${projectId}`, {

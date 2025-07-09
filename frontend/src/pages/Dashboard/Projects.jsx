@@ -30,6 +30,10 @@ const Projects = () => {
 
   const handleCreateProject = async (e) => {
     e.preventDefault();
+    if(!title || !description || !language || !isSolo){
+      toast.warning("All fields are required!");
+      return;
+    }
     setLoading(true)
     try {
       const res = await fetch(`${BASE_URL}/createProject`, {
