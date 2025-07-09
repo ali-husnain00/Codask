@@ -13,7 +13,7 @@ import { useRef } from 'react';
 import useDeviceType from '../../hooks/useDeviceType';
 
 
-const SOCKET_SERVER_URL = "https://codask.onrender.com";
+const SOCKET_SERVER_URL = import.meta.env.VITE_API_URL;;
 
 const Editor = () => {
   const { id } = useParams();
