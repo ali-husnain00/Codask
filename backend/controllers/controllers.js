@@ -76,8 +76,8 @@ export const logout = (req, res) => {
   try {
     res.clearCookie("token", {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: true,
+      sameSite: "None",
     });
     res.status(200).send("User Logged out successfully!");
   } catch (error) {
