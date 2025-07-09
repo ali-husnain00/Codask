@@ -13,7 +13,7 @@ import { useRef } from 'react';
 import useDeviceType from '../../hooks/useDeviceType';
 
 
-const SOCKET_SERVER_URL = "http://localhost:3000";
+const SOCKET_SERVER_URL = "https://codask.onrender.com";
 
 const Editor = () => {
   const { id } = useParams();
