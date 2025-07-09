@@ -156,3 +156,19 @@
   background-color: #3a3a50;
   color: var(--text);
 }
+
+@media (max-width:768px){
+  .task-main{
+    flex-direction: column;
+  }
+  .task-right{
+    flex-direction: row;
+    gap: 1rem;
+  }
+  .task-meta{
+    flex-wrap: wrap;
+  }
+  .task-actions{
+    justify-content: start;
+  }
+}

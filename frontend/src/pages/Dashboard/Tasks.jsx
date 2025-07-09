@@ -47,7 +47,6 @@ const Tasks = () => {
   };
 
   const fetchTasks = async () => {
-    setLoading(true)
     try {
       const res = await fetch(`${BASE_URL}/getUserTasks`, {
         method: "GET",
@@ -60,9 +59,6 @@ const Tasks = () => {
       }
     } catch (error) {
       console.log(error);
-    }
-    finally {
-      setLoading(false)
     }
   };
 

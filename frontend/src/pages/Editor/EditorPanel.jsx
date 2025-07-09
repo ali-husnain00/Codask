@@ -4,10 +4,9 @@ import { FaCode } from 'react-icons/fa';
 import { Editor } from "@monaco-editor/react";
 import { Context } from '../../components/context/context';
 import { toast } from 'sonner';
-import { FiMaximize } from 'react-icons/fi';
-import { FiSidebar } from 'react-icons/fi';
+import { FiSidebar, FiMenu, FiMaximize } from 'react-icons/fi';
 
-const EditorPanel = ({ file, files, setPreviewHTML, setLogs, previewMode, setPreviewMode, socket }) => {
+const EditorPanel = ({ file, files, setPreviewHTML, setLogs, previewMode, setPreviewMode, socket, setEditorMenu }) => {
   const [content, setContent] = useState('');
   const { BASE_URL, setEditorData, user } = useContext(Context);
 
@@ -118,46 +117,54 @@ const EditorPanel = ({ file, files, setPreviewHTML, setLogs, previewMode, setPre
     }
   };
 
-  useEffect(() =>{
-    if(!socket) return;
+  useEffect(() => {
+    if (!socket) return;
 
-    const handleCodeUpdate = (update) =>{
-      if(update.fileId === file._id && update.senderId !== user._id){
+    const handleCodeUpdate = (update) => {
+      if (update.fileId === file._id && update.senderId !== user._id) {
         setContent(update.content);
       }
     }
 
     socket.on("codeUpdate", handleCodeUpdate);
 
-    return () =>{
+    return () => {
       socket.off("codeUpdate", handleCodeUpdate)
     }
-  },[file, socket, user])
+  }, [file, socket, user])
 
-  const onContentChange = (newContent) =>{
+  const onContentChange = (newContent) => {
     setContent(newContent);
-    if(socket && file){
+    if (socket && file) {
       socket.emit("codeChange", {
-      projectId:file.projectId,
-      fileId:file._id,
-      content:newContent,
-      senderId:user._id,
-    })
-     socket.emit("typing", {projectId: file.projectId, user});
+        projectId: file.projectId,
+        fileId: file._id,
+        content: newContent,
+        senderId: user._id,
+      })
+      socket.emit("typing", { projectId: file.projectId, user });
     }
-}
+  }
 
   if (!file) return <div className="editor-panel empty"><p>No file selected</p></div>;
 
   return (
-    <div className={`editor-panel ${previewMode === "editor" ? "editor-fullWidth" : "" || previewMode === "split" ? "editor-halfWidth" : "" || previewMode === "preview" ? "hide-editor" : ""}`}>
+    <div className={`editor-panel 
+  ${previewMode === "editor" ? "editor-fullWidth" : ""} 
+  ${previewMode === "split" ? "editor-halfWidth" : ""} 
+  ${previewMode === "preview" ? "hide-editor" : ""}`}>
       <div className="editor-header">
+      <div className="editor-menu-btn" onClick={() =>setEditorMenu(prev => !prev)}>
+        <FiMenu fontSize={24} fontWeight={600} title='Open menu'/>
+      </div>
         <span><FaCode /> {file.filename}</span>
-        <div className="action-btns">
+        <div className="editor-action-btns">
           <button className="run-btn" onClick={handleRunCode}>▶ Run</button>
           <div className="save-code-btn" onClick={handleSaveCode}>Save</div>
-          <FiMaximize size={24} title="Full Editor View" onClick={() =>setPreviewMode("editor")} />
-          <FiSidebar size={24} title="Split View" onClick={() =>setPreviewMode("split")} />
+          <div className="editor-width-control-btns">
+            <FiMaximize size={24} title="Full Editor View" onClick={() => setPreviewMode("editor")} />
+            <FiSidebar size={24} title="Split View" onClick={() => setPreviewMode("split")} />
+          </div>
         </div>
       </div>
       <Editor

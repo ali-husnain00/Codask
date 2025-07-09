@@ -3,18 +3,20 @@ import './Register.css';
 import { toast } from 'sonner';
 import { Link, useNavigate } from 'react-router-dom';
 import { Context } from '../../components/context/context';
+import Loader from '../../components/Loader/Loader';
 
 const Register = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false)
 
   const navigate = useNavigate();
   const { BASE_URL } = useContext(Context);
 
   const handleRegister = async (e) => {
     e.preventDefault();
-
+    setLoading(true)
     try {
       const res = await fetch(`${BASE_URL}/register`, {
         method: "POST",
@@ -35,7 +37,14 @@ const Register = () => {
       toast.error("Server error!");
       console.error(error);
     }
+    finally{
+      setLoading(false)
+    }
   };
+
+  if(loading){
+    return <Loader/>
+  }
 
   return (
     <div className="register-container">

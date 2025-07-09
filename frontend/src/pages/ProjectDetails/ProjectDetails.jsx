@@ -144,7 +144,7 @@ const ProjectDetails = () => {
                             <h3>Assign Task</h3>
                             <MdClose className="close-icon" onClick={() => setShowModal(false)} />
                         </div>
-                        <form className="modal-form" onSubmit={handleTaskAssign}>
+                        <form className="task-modal-form" onSubmit={handleTaskAssign}>
                             <input
                                 type="text"
                                 placeholder="Task Title"

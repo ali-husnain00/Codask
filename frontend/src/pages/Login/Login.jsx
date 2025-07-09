@@ -31,7 +31,7 @@ const Login = () => {
         toast.success("Login successful!");
         setTimeout(() =>{
           navigate("/dashboard")
-        },500)
+        },100)
       }
       else{
         toast.error("An error occured while login!")

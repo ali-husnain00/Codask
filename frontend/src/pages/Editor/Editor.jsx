@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { FiMessageCircle } from 'react-icons/fi';
 import { io } from "socket.io-client";
 import { useRef } from 'react';
+import useDeviceType from '../../hooks/useDeviceType';
 
 
 const SOCKET_SERVER_URL = "http://localhost:3000";
@@ -25,6 +26,10 @@ const Editor = () => {
   const [logs, setLogs] = useState([]);
   const [activeUsers, setActiveUsers] = useState([]);
   const [typingUser, setTypingUser] = useState(null);
+
+  const { isDesktop, isLaptop, isMobile } = useDeviceType();
+
+  const [editorMenu, setEditorMenu] = useState(false)
 
   // Chat modal state
   const [chatOpen, setChatOpen] = useState(false);
@@ -111,9 +116,9 @@ const Editor = () => {
     newSocket.on("userTyping", (user) => {
       setTypingUser(user);
 
-      setTimeout(() =>{
+      setTimeout(() => {
         setTypingUser(null)
-      },2500)
+      }, 2500)
     });
 
     return () => {
@@ -161,6 +166,14 @@ const Editor = () => {
     return `${hours}:${minutes} ${amPm}`
   }
 
+  useEffect(() => {
+    if (isDesktop || isLaptop || isMobile) {
+      setPreviewMode("split");
+    }
+  }, [isDesktop, isLaptop, isMobile]);
+
+
+
   if (loading) return <Loader />;
 
   return (
@@ -176,10 +189,12 @@ const Editor = () => {
         projectId={id}
         fetchProject={fetchProject}
         activeUsers={activeUsers}
-        typingUser = {typingUser}
+        typingUser={typingUser}
+        editorMenu={editorMenu}
+        setEditorMenu={setEditorMenu}
       />
 
-      <div className={`editor-main ${previewMode}`}>
+      <div className={`editor-main ${previewMode} ${isMobile ? "mobile-layout" : isLaptop ? "laptop-layout" : "desktop-layout"}`}>
         {previewMode !== "preview" && (
           <EditorPanel
             files={editorData.files}
@@ -190,6 +205,8 @@ const Editor = () => {
             previewMode={previewMode}
             setPreviewMode={setPreviewMode}
             socket={socket}
+            editorMenu={editorMenu}
+            setEditorMenu={setEditorMenu}
           />
         )}
         {previewMode !== "editor" && (

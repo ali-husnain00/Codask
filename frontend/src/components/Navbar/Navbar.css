@@ -11,35 +11,72 @@
     animation: slideFromTop 0.45s ease;
 }
 
-.logo{
+.logo {
     width: 190px;
     height: auto;
 }
 
-.logo img{
+.logo img {
     width: 100%;
     height: auto;
 }
 
-.navlinks{
+.navlinks {
     display: flex;
     align-items: center;
     gap: 50px;
 }
 
-.navlinks a{
+.navlinks a {
     color: var(--text);
 }
 
-.hide{
+.hide {
     display: none;
 }
 
+.nav-select {
+  padding: 8px 12px;
+  font-size: 16px;
+  background-color: var(--bg-panel); /* or #fff for light theme */
+  color: var(--text); /* or #333 for light theme */
+  border: 1px solid var(--text-muted); /* subtle border */
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.nav-select option {
+  background-color: var(--bg-main); 
+  color: var(--text);
+}
+
+
+
 @keyframes slideFromTop {
-    0%{
-       transform: translateY(-100px);
+    0% {
+        transform: translateY(-100px);
     }
-    100%{
+
+    100% {
         transform: translateY(0);
+    }
+}
+
+@media (max-width:768px) {
+    .navbar {
+        padding: 0 20px;
+        height: 85px;
+    }
+
+    .logo {
+        width: 175px;
+        height: auto;
+        position: relative;
+        left: -30px;
     }
 }

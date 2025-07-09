@@ -3,7 +3,7 @@
     flex-direction: column;
     gap: 30px;
     height: 100%;
-    padding: 2rem;
+    padding: 1rem;
     border-radius: 12px;
     font-family: var(--font-ui);
     color: var(--text);
@@ -233,4 +233,10 @@
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+@media (max-width:450px){
+  .add-member-panel{
+    padding: 0;
+  }
 }

@@ -10,10 +10,13 @@ const PreviewPanel = ({ file, previewHTML, logs, previewMode, setPreviewMode }) 
   const isConsoleLang = ['javascript', 'python', 'cpp', 'java'].includes(language);
 
   return (
-    <div className={`preview-panel ${previewMode === "preview" ? "preview-fullWidth" : "" || previewMode === "split" ? "preview-halfWidth" : "" || previewMode === "editor" ? "hide-preview" : ""}`}>
+    <div className={`preview-panel 
+  ${previewMode === "preview" ? "preview-fullWidth" : ""} 
+  ${previewMode === "split" ? "preview-halfWidth" : ""} 
+  ${previewMode === "editor" ? "hide-preview" : ""}`}>
       <div className="preview-header">
         <span><FaEye /> Live Preview</span>
-        <div className="action-btns">
+        <div className="editor-width-control-btns">
           <FiMaximize size={24} title="Full Editor View" onClick={() => setPreviewMode("preview")} />
           <FiSidebar size={24} title="Split View" onClick={() => setPreviewMode("split")} />
         </div>

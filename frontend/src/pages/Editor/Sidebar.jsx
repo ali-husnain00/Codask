@@ -4,8 +4,9 @@ import { FaFileAlt, FaUser, FaPlus, FaTimes } from 'react-icons/fa';
 import { Context } from '../../components/context/context';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
+import {FiX} from 'react-icons/fi';
 
-const Sidebar = ({ files, members, onFileSelect, onNewFile, projectId, fetchProject, activeUsers, typingUser }) => {
+const Sidebar = ({ files, members, onFileSelect, onNewFile, projectId, fetchProject, activeUsers, typingUser, editorMenu, setEditorMenu }) => {
   const [showModal, setShowModal] = useState(false);
   const [filename, setFilename] = useState('');
   const [language, setLanguage] = useState('javascript');
@@ -42,7 +43,10 @@ const Sidebar = ({ files, members, onFileSelect, onNewFile, projectId, fetchProj
   };
 
   return (
-    <div className="editor-sidebar">
+    <div className={`editor-sidebar ${editorMenu ? "activeEM":""}`}>
+      <div className="editor-close-menu-btn" onClick={() =>setEditorMenu(prev => !prev)}>
+          <FiX fontSize={25} fontWeight={600} title='Close menu'/>
+        </div>
       <div className="section">
         <h4>Team Members</h4>
         <ul>

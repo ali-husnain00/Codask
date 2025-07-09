@@ -4,9 +4,9 @@
   background: var(--bg-main);
   border-right: 2px solid #252535;
   color: var(--text);
-  width: 50%;
-  height: auto;
+  height: 100%;
 }
+
 
 .editor-panel.empty {
   display: flex;
@@ -29,7 +29,7 @@
   justify-content: space-between;
 }
 
-.editor-header span{
+.editor-header span {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -49,15 +49,16 @@
   height: 100%;
 }
 
-.action-btns{
+.editor-action-btns {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 10px;
 }
 
-.run-btn, .save-code-btn {
-  background-color: var(--accent); 
+.run-btn,
+.save-code-btn {
+  background-color: var(--accent);
   color: #fff;
   border: none;
   padding: 8px 16px;
@@ -72,20 +73,42 @@
   background-color: #0daeda;
 }
 
-.editor-fullWidth{
+.editor-fullWidth {
   width: 100%;
   display: flex;
 }
 
-.editor-halfWidth{
+.editor-halfWidth {
   width: 50%;
   display: flex;
 }
 
-.hide-editor{
+.editor-menu-btn{
   display: none;
 }
 
+@media (max-width:1400px) {
+  .editor-panel {
+    width: 100% !important;
+    height: 50%;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+  }
+  .editor-width-control-btns{
+    display: none;
+  }
+}
 
-
-
+@media (max-width:1024px){
+  .editor-menu-btn{
+    padding: 5px 10px;
+    border-radius: 10px;
+    left: 15px;
+    top: 15px;
+    display: flex;
+    cursor: pointer;
+    color: var(--accent);
+    font-weight: 700;
+  }
+}

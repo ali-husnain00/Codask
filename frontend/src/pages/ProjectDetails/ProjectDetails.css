@@ -3,6 +3,7 @@
   padding: 40px 60px;
   color: var(--text);
   background-color: var(--bg-main);
+  animation: fadeSlideIn 0.6s ease-out;
 }
 
 .project-header {
@@ -12,10 +13,10 @@
   margin-bottom: 2rem;
 }
 
-.proj-title{
-    display: flex;
-    align-items: center;
-    gap: 30px;
+.proj-title {
+  display: flex;
+  align-items: center;
+  gap: 30px;
 }
 
 .project-header h2 {
@@ -70,10 +71,10 @@
   margin-bottom: 1rem;
 }
 
-.member-grid{
-    display: flex;
-    flex-wrap: wrap;
-    gap: 30px;
+.member-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
 }
 
 .member-card {
@@ -190,6 +191,7 @@
   border-radius: 10px;
   width: 400px;
   max-width: 95%;
+  animation: fadeScaleIn 0.3s ease-out forwards;
 }
 
 .modal-header {
@@ -199,21 +201,21 @@
   margin-bottom: 1rem;
 }
 
-.modal-form input,
-.modal-form textarea,
-.modal-form select {
+.task-modal-form input,
+.task-modal-form textarea,
+.task-modal-form select {
   width: 100%;
-  margin-bottom: 1rem;
   padding: 0.6rem;
+  margin-bottom: 1rem;
   background-color: #1c1c2e;
   color: var(--text);
   border: 1px solid #444;
   border-radius: 6px;
 }
 
-.modal-form button {
+.task-modal-form button {
   background-color: var(--accent);
-  color: #000;
+  color: #333;
   padding: 0.6rem 1.2rem;
   border: none;
   border-radius: 5px;
@@ -221,3 +223,14 @@
   cursor: pointer;
 }
 
+@media (max-width:1024px) {
+  .progress-wrapper {
+    width: 100%;
+  }
+}
+
+@media (max-width:768px) {
+  .project-details-page {
+    padding: 40px 20px;
+  }
+}

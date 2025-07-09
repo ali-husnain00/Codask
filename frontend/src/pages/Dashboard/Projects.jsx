@@ -80,6 +80,9 @@ const Projects = () => {
     }
   }
 
+  const completedProjects = user.projects.filter(proj => proj.progress === 100).length || 0;
+  const inProgressProjects = user.projects.filter(proj => proj.progress > 0 && proj.progress < 100 ).length || 0;
+
   if (loading) {
     return <Loader />
   }
@@ -88,7 +91,7 @@ const Projects = () => {
     <div className="projects">
       <div className="projects-header">
         <h2>My Projects</h2>
-        <button className="create-btn" onClick={() => setShowModal(true)}><FaPlus /> Create New Project</button>
+        <button className="create-btn" onClick={() => setShowModal(true)}><FaPlus /> New Project</button>
       </div>
 
       <div className="summary-cards">
@@ -100,13 +103,13 @@ const Projects = () => {
         </div>
         <div className="card pending">
           <div>
-            <h3>0</h3>
+            <h3>{inProgressProjects}</h3>
             <p>Pending</p>
           </div>
         </div>
         <div className="card completed">
           <div>
-            <h3>0</h3>
+            <h3>{completedProjects}</h3>
             <p>Completed</p>
           </div>
         </div>

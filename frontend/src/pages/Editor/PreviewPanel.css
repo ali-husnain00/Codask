@@ -3,7 +3,7 @@
   flex-direction: column;
   background: var(--bg-main);
   color: var(--text);
-  width: 50%;
+  height: 100%;
 }
 
 .preview-header {
@@ -59,6 +59,15 @@
   display: flex;
 }
 
-.hide-preview{
+@media (max-width:1400px){
+  .preview-panel {
+  width: 100% !important; 
+  height: 50%; 
+  flex: none;
+  display: flex;
+  flex-direction: column; 
+}
+.editor-width-control-btns{
   display: none;
+}
 }
