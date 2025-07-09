@@ -30,7 +30,7 @@ const Projects = () => {
 
   const handleCreateProject = async (e) => {
     e.preventDefault();
-    if(!title || !description || !language || !isSolo){
+    if(!title || !description || !language ){
       toast.warning("All fields are required!");
       return;
     }
