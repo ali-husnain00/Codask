@@ -1,53 +1,48 @@
-# 🚀 Codask - Collaborative Code Editor & Project Management Platform
+# 🚀 Codask - Professional Collaborative Workspace & IDE
 
-Codask is a full-stack web application that enables developers to **collaboratively code in real-time**, **chat**, and **track project progress** through tasks and team management — all in one place.
-
-Built with the **MERN Stack** (MongoDB, Express, React, Node.js) + **Socket.io** for real-time communication.
+Codask is a production-grade, collaborative developer workspace designed for seamless real-time coding, project management, and team communication. Built for speed and developer experience, it combines a VS Code-like editing environment with integrated task tracking and live code execution.
 
 ---
 
-## 🧠 Features
+## ✨ Features
 
-### 🔧 Core Functionalities
+### 🧑‍💻 Production-Grade IDE
+*   **VS Code Experience:** Collapsible sidebar rail, tab-based file navigation, and a Midnight Slate professional theme.
+*   **Judge0 Execution Engine:** Multi-language code execution (JS, Python, C++, Java) with full **stdin support** for testing logic.
+*   **Live Web Preview:** Real-time HTML/CSS/JS rendering with a debounced injection engine—see changes as you type.
+*   **Monaco Editor:** Industry-standard code editing with syntax highlighting and intelligent layout.
 
-* 🧑‍💻 **Collaborative Code Editor** (Real-time)
-* 💬 **Real-time Chat** for project communication
-* 📁 **File creation** per project (supports multiple languages)
-* ✅ **Task Assignment & Status Updates**
-* 📊 **Project Progress Tracker** (based on task completion)
-
-### 👥 User & Team Management
-
-* 🔐 Register / Login / Logout with JWT Auth
-* 👥 Role-based members (`Project Lead`, `Developer`)
-* 📩 Invite users to projects via email
-* 📬 Accept / Decline project invites
+### 👥 Collaboration & Management
+*   **Real-time Synchronization:** Collaborative coding powered by Socket.io for zero-latency updates.
+*   **Integrated Project Chat:** Discuss features and bugs without leaving the workspace.
+*   **Task & Progress Tracking:** Assign tasks, update statuses, and watch your project's progress bar move automatically.
+*   **Team Control:** Invite developers via email and manage project roles (Project Lead vs. Developer).
 
 ---
 
 ## 🏗️ Tech Stack
 
-| Frontend                        | Backend             | Database          | Real-Time |
-| ------------------------------- | ------------------- | ----------------- | --------- |
-| React.js, Context API, AOS, CSS | Node.js, Express.js | MongoDB, Mongoose | Socket.io |
+| Frontend | Backend | Database | Real-Time |
+| :--- | :--- | :--- | :--- |
+| **React 18**, Monaco Editor | **Node.js**, Express.js | **MongoDB**, Mongoose | **Socket.io** |
+| Tailwind CSS, Framer Motion | Judge0 API (Execution) | JWT (Auth) | Lucide Icons |
 
 ---
 
 ## 📂 Folder Structure
 
-```
+```text
 Codask/
-│
-├── frontend/       # React Frontend
+├── frontend/       # Vite + React Frontend
 │   ├── src/
+│   │   ├── pages/  # Dashboard, Editor, Projects
+│   │   └── lib/    # API Clients & Utilities
 │   └── ...
-│
-├── backend/        # Node.js Backend
-│   ├── models/
-│   ├── controllers/
-│   ├── routes/
+├── backend/        # Express.js Backend
+│   ├── controllers/# Business logic
+│   ├── routes/     # API Endpoints
+│   ├── models/     # MongoDB Schemas
 │   └── ...
-│
 └── README.md
 ```
 
@@ -59,8 +54,10 @@ Create a `.env` file in the `backend/` directory:
 
 ```env
 PORT=3000
-MONGO_URL=your_mongodb_connection_string
+MONGODB_URI=your_mongodb_connection_string
 SECRET_KEY=your_jwt_secret_key
+CORS_ORIGINS=https://your-frontend.netlify.app,http://localhost:5173
+RAPIDAPI_KEY=your_judge0_rapidapi_key
 ```
 
 ---
@@ -68,22 +65,20 @@ SECRET_KEY=your_jwt_secret_key
 ## 💠 Installation (Local Development)
 
 ### 1. Clone the Repo
-
 ```bash
 git clone https://github.com/ali-husnain00/codask.git
 cd codask
 ```
 
 ### 2. Setup Backend
-
 ```bash
 cd backend
 npm install
+# Ensure .env is configured
 npm run dev
 ```
 
 ### 3. Setup Frontend
-
 ```bash
 cd ../frontend
 npm install
@@ -94,45 +89,27 @@ npm run dev
 
 ---
 
-## 🚀 Deployment
+## 🚀 Deployment Notes
 
-When deploying:
+Codask is optimized for cross-site deployment (e.g., Netlify + Railway). 
 
-* Update `CORS` and `cookie` settings:
-
-```js
-// Example for cookie
-res.cookie("token", token, {
-  httpOnly: true,
-  secure: true,        // ✅ set to true in production (HTTPS)
-  sameSite: "none",    // ✅ required for cross-origin cookies
-});
-```
-
-* Use services like:
-
-  * **Frontend**: Vercel / Netlify
-  * **Backend**: Render / Railway / Cyclic
-  * **Database**: MongoDB Atlas
+*   **Secure Cookies:** The system automatically handles `SameSite: None` and `Secure` flags for cross-domain auth.
+*   **Proxy Support:** Backend uses `trust proxy` to ensure secure headers work behind load balancers.
+*   **CORS:** Ensure `CORS_ORIGINS` in your backend `.env` matches your deployed frontend URL exactly.
 
 ---
 
 ## 🙌 Acknowledgements
-
-Big thanks to:
-
-* [Socket.io](https://socket.io/)
-* [MongoDB](https://www.mongodb.com/)
-* [React](https://react.dev/)
-* All open-source contributors that inspired parts of this system
+*   [Judge0](https://judge0.com/) for the powerful execution engine.
+*   [Monaco Editor](https://microsoft.github.io/monaco-editor/) for providing the IDE core.
+*   [Socket.io](https://socket.io/) for the seamless collaboration.
 
 ---
 
 ## 🧑‍💻 Author
 
 **Ali Husnain**
-React.js Developer
-🌍 [Portfolio](https://alihusnaindev.netlify.app/) | 👥 [GitHub](https://github.com/ali-husnain00)
+🌍 [Portfolio](https://alihusnaindev.vercel.app) | 👥 [GitHub](https://github.com/ali-husnain00)
 
 ---
 
