@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
-import './EditorPanel.css';
-import { FaCode } from 'react-icons/fa';
-import { Editor } from "@monaco-editor/react";
-import { Context } from '../../components/context/context';
-import { toast } from 'sonner';
-import { FiSidebar, FiMenu, FiMaximize } from 'react-icons/fi';
+import { Code2, Sidebar as SidebarIcon, Menu, Maximize2 } from 'lucide-react';
+import { apiRequest } from '../../lib/apiClient';
+import { Button } from '../../components/ui/button';
+import { Context } from '@/components/context/context';
+import { Editor } from '@monaco-editor/react';
 
-const EditorPanel = ({ file, files, setPreviewHTML, setLogs, previewMode, setPreviewMode, socket, setEditorMenu }) => {
+const EditorPanel = ({ file, files, setActiveFile, setPreviewHTML, setLogs, stdin, previewMode, setPreviewMode, socket, setEditorMenu }) => {
   const [content, setContent] = useState('');
   const { BASE_URL, setEditorData, user } = useContext(Context);
 
@@ -34,86 +33,123 @@ const EditorPanel = ({ file, files, setPreviewHTML, setLogs, previewMode, setPre
     }
   };
 
+  useEffect(() => {
+    const hasWebFiles = files?.some(f => ['html', 'css', 'javascript'].includes(f.language?.toLowerCase()));
+    if (!hasWebFiles) return;
+
+    const getFileContent = (lang) => {
+      const f = files?.find(f => f.language?.toLowerCase() === lang);
+      if (!f) return '';
+      return (file && file._id === f._id) ? content : f.content;
+    };
+
+    const html = getFileContent('html');
+    const css = getFileContent('css');
+    const js = getFileContent('javascript');
+
+    let finalDoc = html;
+    if (css) {
+      if (/<\/head>/i.test(finalDoc)) {
+        finalDoc = finalDoc.replace(/<\/head>/i, `<style>\n${css}\n</style></head>`);
+      } else {
+        finalDoc = `<style>\n${css}\n</style>\n` + finalDoc;
+      }
+    }
+    
+    if (js) {
+      const loopProtectJS = `
+        window.onerror = function(e) { console.error(e); };
+        ${js}
+      `;
+      if (/<\/body>/i.test(finalDoc)) {
+        finalDoc = finalDoc.replace(/<\/body>/i, `<script>\n${loopProtectJS}\n</script></body>`);
+      } else {
+        finalDoc = finalDoc + `\n<script>\n${loopProtectJS}\n</script>`;
+      }
+    }
+
+    const timeout = setTimeout(() => {
+      setPreviewHTML(finalDoc);
+    }, 800);
+    
+    return () => clearTimeout(timeout);
+  }, [content, file, files, setPreviewHTML]);
+
   const handleRunCode = async () => {
     const lang = file?.language?.toLowerCase();
 
-    if (lang === 'html') {
-      const html = files.find(f => f.language === 'html')?.content || '';
-      const css = files.find(f => f.language === 'css')?.content || '';
-      const js = files.find(f => f.language === 'javascript')?.content || '';
-
-      const withCSS = html.replace(/<\/head>/i, `<style>${css}</style></head>`);
-      const finalDoc = withCSS.replace(/<\/body>/i, `<script>${js}</script></body>`);
-      setPreviewHTML(finalDoc);
+    if (lang === 'html' || lang === 'css') {
+      setLogs([{ type: 'log', message: 'Live preview is updated automatically. No backend execution required.' }]);
       return;
     }
 
     if (!['javascript', 'python', 'cpp', 'java'].includes(lang)) {
-      setLogs([{ type: 'error', message: `❌ Unsupported language: ${lang}` }]);
+      setLogs([{ type: 'error', message: `Unsupported language: ${lang}` }]);
       return;
     }
 
-    setLogs([{ type: 'log', message: '⏳ Running your code...' }]);
+    setLogs([{ type: 'log', message: 'Executing code via Judge0...' }]);
 
     try {
-      const res = await fetch('https://emkc.org/api/v2/piston/execute', {
+      const res = await apiRequest(BASE_URL, "/executeCode", {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           language: lang,
-          version: getVersion(lang),
-          files: [{ name: `file.${getExtension(lang)}`, content }],
+          sourceCode: content,
+          stdin: stdin || ""
         }),
       });
 
-      if (!res.ok) {
-        throw new Error(`API error: ${res.status} ${res.statusText}`);
+      const result = res.data || res;
+      const newLogs = [];
+
+      if (result.compile_output) {
+        newLogs.push({ type: 'error', message: `Compiler Output:\n${result.compile_output}` });
       }
 
-      const result = await res.json();
-      const logs = [];
-
-      if (result.run.stdout) {
-        logs.push({ type: 'log', message: result.run.stdout.trim() });
+      if (result.stdout) {
+        newLogs.push({ type: 'log', message: result.stdout.trim() });
       }
 
-      if (result.run.stderr) {
-        logs.push({ type: 'error', message: result.run.stderr.trim() });
+      if (result.stderr) {
+        newLogs.push({ type: 'error', message: result.stderr.trim() });
       }
 
-      if (result.run.stdout && !result.run.stderr) {
-        logs.push({ type: 'log', message: '✅ Code executed successfully!' });
+      if (result.status && result.status.id !== 3 && result.status.description) {
+        if (result.status.id > 3) {
+          newLogs.push({ type: 'error', message: `Status: ${result.status.description}` });
+        } else {
+          newLogs.push({ type: 'log', message: `Status: ${result.status.description}` });
+        }
       }
 
-      if (logs.length === 0) {
-        logs.push({ type: 'log', message: '✅ No output' });
+      if (result.time) {
+        newLogs.push({ type: 'log', message: `Time: ${result.time}s | Memory: ${result.memory}KB` });
       }
 
-      setLogs(logs);
+      if (newLogs.length === 0) {
+        newLogs.push({ type: 'log', message: 'Execution finished with no output.' });
+      }
+
+      setLogs(newLogs);
     } catch (err) {
-      setLogs([{ type: 'error', message: `❌ Error: ${err.message}` }]);
+      setLogs([{ type: 'error', message: `Error: ${err.message}` }]);
     }
   };
 
-
   const handleSaveCode = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/saveCode`, {
+      await apiRequest(BASE_URL, "/saveCode", {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ fileId: file._id, content }),
       });
-
-      if (res.ok) {
-        setEditorData(prev => ({
-          ...prev,
-          files: prev.files.map(f => f._id === file._id ? { ...f, content } : f)
-        }));
-        toast.success('Code saved');
-      }
+      setEditorData(prev => ({
+        ...prev,
+        files: prev.files.map(f => f._id === file._id ? { ...f, content } : f)
+      }));
+      toast.success('Code saved');
     } catch {
-      toast.error('❌ Failed to save code');
+      toast.error('Failed to save code');
     }
   };
 
@@ -146,24 +182,26 @@ const EditorPanel = ({ file, files, setPreviewHTML, setLogs, previewMode, setPre
     }
   }
 
-  if (!file) return <div className="editor-panel empty"><p>No file selected</p></div>;
+  if (!file) return <div className="flex h-full flex-1 items-center justify-center bg-[var(--surface)]"><p>No file selected</p></div>;
 
   return (
-    <div className={`editor-panel 
-  ${previewMode === "editor" ? "editor-fullWidth" : ""} 
-  ${previewMode === "split" ? "editor-halfWidth" : ""} 
-  ${previewMode === "preview" ? "hide-editor" : ""}`}>
-      <div className="editor-header">
-      <div className="editor-menu-btn" onClick={() =>setEditorMenu(prev => !prev)}>
-        <FiMenu fontSize={24} fontWeight={600} title='Open menu'/>
-      </div>
-        <span><FaCode /> {file.filename}</span>
-        <div className="editor-action-btns">
-          <button className="run-btn" onClick={handleRunCode}>▶ Run</button>
-          <div className="save-code-btn" onClick={handleSaveCode}>Save</div>
-          <div className="editor-width-control-btns">
-            <FiMaximize size={24} title="Full Editor View" onClick={() => setPreviewMode("editor")} />
-            <FiSidebar size={24} title="Split View" onClick={() => setPreviewMode("split")} />
+    <div className={`${previewMode === "preview" ? "hidden" : "flex"} ${previewMode === "editor" ? "h-full w-full" : "h-1/2 w-full lg:h-full lg:w-1/2"} min-h-0 flex-col border-b lg:border-b-0 lg:border-r border-[var(--border)] bg-[var(--surface)]`}>
+      <div className="flex h-12 flex-shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--surface-soft)]">
+        <div className="flex h-full items-center overflow-x-auto scrollbar-hide">
+          <div className="flex h-full items-center px-4 cursor-pointer lg:hidden text-[var(--text-muted)] hover:text-[var(--text)] transition-colors border-r border-[var(--border)]" onClick={() =>setEditorMenu(prev => !prev)}>
+            <Menu size={18} title='Open menu'/>
+          </div>
+          <div className="flex h-full items-center gap-2 border-r border-[var(--border)] px-6 text-sm bg-[var(--surface)] border-t-2 border-t-[var(--primary)] text-[var(--foreground)]">
+            <Code2 size={14} className="text-[var(--primary)]" />
+            <span className="font-medium tracking-tight">{file.filename}</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 px-3 flex-shrink-0">
+          <Button variant="default" className="h-7 px-3 text-xs" onClick={handleRunCode}>Run</Button>
+          <Button variant="secondary" className="h-7 px-3 text-xs" onClick={handleSaveCode}>Save</Button>
+          <div className="flex items-center gap-2 ml-2 border-l border-[var(--border)] pl-3 text-[var(--text-muted)]">
+            <Maximize2 className={`cursor-pointer hover:text-[var(--text)] transition-colors ${previewMode === 'editor' ? 'text-[var(--text)]' : ''}`} size={16} title="Full Editor" onClick={() => setPreviewMode("editor")} />
+            <SidebarIcon className={`cursor-pointer hover:text-[var(--text)] transition-colors ${previewMode === 'split' ? 'text-[var(--text)]' : ''}`} size={16} title="Split View" onClick={() => setPreviewMode("split")} />
           </div>
         </div>
       </div>
@@ -187,12 +225,13 @@ const EditorPanel = ({ file, files, setPreviewHTML, setLogs, previewMode, setPre
               { token: 'type', foreground: '4EC9B0' }
             ],
             colors: {
-              'editor.background': '#1E1E2F',
-              'editor.foreground': '#E0E0E0',
-              'editorLineNumber.foreground': '#858585',
-              'editorCursor.foreground': '#AEAFAD',
-              'editor.selectionBackground': '#264F78',
-              'editor.inactiveSelectionBackground': '#3A3D41',
+              'editor.background': '#0a0a0a',
+              'editor.foreground': '#ededed',
+              'editorLineNumber.foreground': '#525252',
+              'editorCursor.foreground': '#ededed',
+              'editor.selectionBackground': '#262626',
+              'editor.inactiveSelectionBackground': '#171717',
+              'editor.lineHighlightBackground': '#171717',
             }
           });
 

@@ -4,6 +4,7 @@ const useDeviceType = () => {
   const [deviceType, setDeviceType] = useState({
     isDesktop: false,
     isLaptop: false,
+    isTablet: false,
     isMobile: false,
     width: window.innerWidth
   });
@@ -12,8 +13,9 @@ const useDeviceType = () => {
     const updateDeviceType = () => {
       const width = window.innerWidth;
       setDeviceType({
-        isDesktop: width >= 1400,
-        isLaptop: width < 1400 && width > 1024,
+        isDesktop: width >= 1280,
+        isLaptop: width >= 1024 && width < 1280,
+        isTablet: width >= 768 && width < 1024,
         isMobile: width < 768,
         width
       });

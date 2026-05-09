@@ -8,26 +8,32 @@ import { Server } from "socket.io";
 import http from "http";
 import message from "./models/message.js";
 import router from "./routes/routes.js";
+import { globalErrorHandler, notFoundHandler } from "./middlewares/errorHandler.js";
 
 const server = http.createServer(app);
+
+dotenv.config();
+const allowedOrigins = (process.env.CORS_ORIGINS || "https://codask.netlify.app,http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim());
+
 const io = new Server(server, {
   cors: {
-    origin: "https://codask.netlify.app",
+    origin: allowedOrigins,
     credentials: true,
   },
 });
 
-dotenv.config();
 connectDB();
+
 app.use(
   cors({
-    origin: "https://codask.netlify.app",
+    origin: allowedOrigins,
     credentials: true,
   })
 );
 app.use(express.json());
 app.use(cookieParser());
-app.use(router)
 
 const activeUsers = {};
 
@@ -69,7 +75,10 @@ socket.on("typing", ({projectId, user}) => {
     const { projectId, sender, content } = data;
 
     if (!projectId || !sender || !content) {
-      console.error("Missing required fields in socket message");
+      socket.emit(
+        "socketError",
+        { success: false, message: "Missing required fields in socket message" }
+      );
       return;
     }
 
@@ -84,7 +93,10 @@ socket.on("typing", ({projectId, user}) => {
 
       io.to(projectId).emit("receiveMessage", fullMessage);
     } catch (err) {
-      console.error("Failed to send message:", err);
+      socket.emit("socketError", {
+        success: false,
+        message: "Failed to send message",
+      });
     }
   });
 
@@ -100,9 +112,12 @@ socket.on("typing", ({projectId, user}) => {
 });
 
 app.get("/", (req, res) => {
-  res.send("App is working");
+  res.json({ success: true, message: "App is working" });
 });
 
+app.use(router);
+app.use(notFoundHandler);
+app.use(globalErrorHandler);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {

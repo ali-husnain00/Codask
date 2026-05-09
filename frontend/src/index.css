@@ -1,64 +1,86 @@
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code&family=Poppins:wght@400;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Fira+Code&family=Inter:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
 
 :root {
-    --bg-main: #1E1E2F;
-    --bg-panel: #2A2A3B;
-    --accent: #14C8FF;
-    --text: #E0E0E0;
-    --text-muted: #A0A0A0;
-    --success: #3DDC97;
-    --error: #FF5C5C;
-
-    --font-ui: 'Poppins', sans-serif;
-    --font-code: 'Fira Code';
+  --background: #0A0D12;
+  --foreground: #E6EAF0;
+  --card: #11161F;
+  --card-foreground: #E6EAF0;
+  --popover: #11161F;
+  --popover-foreground: #E6EAF0;
+  --surface: #11161F;
+  --surface-soft: #161C26;
+  --border: #232B3A;
+  --input: #232B3A;
+  --ring: #3B82F6;
+  --primary: #3B82F6;
+  --primary-foreground: #ffffff;
+  --secondary: #161C26;
+  --secondary-foreground: #E6EAF0;
+  --accent: #161C26;
+  --accent-foreground: #E6EAF0;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --primary-hover: #2563EB;
+  --text: #E6EAF0;
+  --text-secondary: #A7B0BE;
+  --text-muted: #6B7280;
+  --muted-foreground: #6B7280;
+  --success: #10b981;
+  --danger: #FF5C5C;
+  --warning: #f59e0b;
+  --radius: 0.5rem;
+  --font-ui: "Inter", sans-serif;
+  --font-code: "Fira Code", monospace;
+  
+  --container-width: 1200px;
 }
 
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+@layer base {
+  h1 {
+      font-size: clamp(40px, 5vw, 48px);
+      font-weight: 700;
+  }
+
+  h2 {
+      font-size: clamp(28px, 4vw, 32px);
+      font-weight: 600;
+  }
+
+  h3 {
+      font-size: clamp(20px, 3vw, 24px);
+      font-weight: 500;
+  }
+
+  p, body {
+      font-size: 14px;
+      @media (min-width: 768px) {
+          font-size: 16px;
+      }
+      font-weight: 400;
+  }
+
+  small, .text-small {
+      font-size: 13px;
+      color: var(--text-muted);
+  }
 }
 
 body {
-    background-color: var(--bg-main);
-    color: var(--text);
-    font-family: var(--font-ui);
-    line-height: 1.6;
-}
-
-li{
-    list-style: none;
-}
-
-a{
-    text-decoration: none;
-}
-
-h1 {
-    font-size: clamp(24px, 5vw, 48px);
-    font-weight: 700;
-}
-
-h2 {
-    font-size: clamp(20px, 4vw, 36px);
-    font-weight: 600;
-}
-
-h3 {
-    font-size: clamp(18px, 3.5vw, 28px);
-    font-weight: 600;
-}
-
-p {
-    font-size: clamp(14px, 2.5vw, 18px);
-    font-weight: 400;
-    color: var(--text-muted);
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-ui);
+  line-height: 1.5;
 }
 
 @keyframes fadeSlideIn {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -66,15 +88,7 @@ p {
   }
 }
 
-@keyframes fadeScaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+a {
+  text-decoration: none;
+  color: inherit;
 }
-
-

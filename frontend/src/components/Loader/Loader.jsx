@@ -1,11 +1,9 @@
 import React from 'react';
-import './Loader.css';
 
 const Loader = () => {
   return (
-    <div className="code-loader-wrapper">
-      <span className="bracket left-bracket">{'{'}</span>
-      <span className="bracket right-bracket">{'}'}</span>
+    <div className="flex min-h-screen items-center justify-center bg-[var(--background)]">
+      <div className="animate-pulse font-mono text-5xl font-bold text-[var(--primary)]">{`{ }`}</div>
     </div>
   );
 };

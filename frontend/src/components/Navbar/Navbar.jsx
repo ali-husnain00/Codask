@@ -1,79 +1,141 @@
-import React, { useContext } from 'react'
-import "./Navbar.css"
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Context } from '../context/context'
-import { toast } from "sonner"
-import useDeviceType from '../../hooks/useDeviceType.js'
+import React, { useContext, useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Context } from "../context/context";
+import { toast } from "sonner";
+import useDeviceType from "../../hooks/useDeviceType.js";
+import { Button } from "../ui/button.jsx";
+import { apiRequest } from "../../lib/apiClient.js";
+import { Code2, Menu, X } from "lucide-react";
 
 const Navbar = () => {
-
   const { user, BASE_URL, getLoggedInUser } = useContext(Context);
-  const { isMobile } = useDeviceType();
-  const navigate = useNavigate()
+  const { isMobile, isTablet } = useDeviceType();
+  const isCompact = isMobile || isTablet;
+  const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener("scroll", onScroll);
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const handleLogout = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/logout`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        credentials: "include"
-      })
-      if (res.ok) {
-        toast.success("Logout successful!");
-        getLoggedInUser();
-        navigate("/login");
-      }
+      await apiRequest(BASE_URL, "/logout", { method: "POST" });
+      toast.success("Logout successful!");
+      getLoggedInUser();
+      navigate("/login");
     } catch (error) {
-      toast.error("An error occured while logging out!")
-    }
-  }
-
-  const handleChange = (e) => {
-    const value = e.target.value;
-
-    if (value === "logout") {
-      handleLogout();
-    } else {
-      navigate(value);
+      toast.error(error.message || "An error occured while logging out!");
     }
   };
 
-  const location = useLocation();
-  const HideNav = location.pathname === "/dashboard";
+  const scrollToSection = (id) => {
+    if (location.pathname !== "/") {
+      navigate(`/#${id}`);
+      return;
+    }
+    const section = document.getElementById(id);
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+      setMobileOpen(false);
+    }
+  };
+
+  const isAppView = ["/dashboard", "/editor", "/projectDetail"].some((path) =>
+    location.pathname.startsWith(path)
+  );
+
   return (
-    <div className={`navbar ${HideNav ? "hide" : ""}`}>
-      <div className="logo">
-        <img src="/Codask_logo.png" loading='lazy' />
-      </div>
-      <ul className="navlinks">
-        {isMobile ? (
-          <li>
-            <select className="nav-select" onChange={handleChange} defaultValue="" value={location.pathname === "/dashboard" ? "/dashboard" : ""}>
-              <option value="" disabled>{`👋 ${user?.username || "Guest"}`}</option>
-              <option value="/dashboard">Dashboard</option>
-              {user ? (
-                <option value="logout">Logout</option>
-              ) : (
-                <option value="/login">Login</option>
-              )}
-            </select>
-          </li>
-        ) : (
-          <>
-            <li><Link to="/dashboard">Dashboard</Link></li>
-            {user ? (
-              <li onClick={handleLogout} style={{ cursor: "pointer" }}>Logout</li>
-            ) : (
-              <li><Link to="/login">Login</Link></li>
-            )}
-          </>
+    <header
+      className={`sticky top-0 z-[120] flex h-[64px] w-full items-center justify-between gap-4 border-b px-4 md:px-8 transition-all ${
+        scrolled
+          ? "border-[var(--border)] bg-[#0A0D12]/80 backdrop-blur-md"
+          : "border-transparent bg-transparent"
+      }`}
+    >
+      <div className="flex items-center gap-8">
+        <Link to="/">
+          <div className="inline-flex items-center gap-2 font-semibold tracking-tight text-[var(--text)]">
+            <Code2 size={24} className="text-[var(--text)]" />
+            <span className="text-lg">Codask</span>
+          </div>
+        </Link>
+        
+        {!isCompact && !isAppView && (
+          <nav className="flex items-center gap-2">
+            <Button variant="ghost" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)]" onClick={() => scrollToSection("features")}>Features</Button>
+            <Button variant="ghost" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)]" onClick={() => scrollToSection("workflow")}>Workflow</Button>
+            <Button variant="ghost" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)]" onClick={() => scrollToSection("pricing")}>Pricing</Button>
+            <Button variant="ghost" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)]" onClick={() => scrollToSection("about")}>About</Button>
+          </nav>
         )}
-      </ul>
+      </div>
 
-    </div>
-  )
-}
+      {isCompact ? (
+        <Button
+          variant="outline"
+          className="h-10 w-10 p-0"
+          onClick={() => setMobileOpen((prev) => !prev)}
+          aria-label="Toggle navigation menu"
+        >
+          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+        </Button>
+      ) : (
+        <div className="flex items-center gap-3">
+          {user ? (
+            <>
+              {!isAppView && (
+                <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+                  Dashboard
+                </Button>
+              )}
+              <Button variant="outline" onClick={handleLogout}>
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" onClick={() => navigate("/login")}>
+                Login
+              </Button>
+              <Button onClick={() => navigate("/register")}>
+                Get Started
+              </Button>
+            </>
+          )}
+        </div>
+      )}
 
-export default Navbar
+      {isCompact && mobileOpen && (
+        <div className="absolute left-4 right-4 top-20 grid gap-2 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-xl backdrop-blur-md">
+          {!isAppView && (
+            <>
+              <Button variant="ghost" className="justify-start" onClick={() => scrollToSection("features")}>Features</Button>
+              <Button variant="ghost" className="justify-start" onClick={() => scrollToSection("workflow")}>Workflow</Button>
+              <Button variant="ghost" className="justify-start" onClick={() => scrollToSection("pricing")}>Pricing</Button>
+              <Button variant="ghost" className="justify-start" onClick={() => scrollToSection("about")}>About</Button>
+            </>
+          )}
+          {user ? (
+             <>
+               <Button variant="ghost" className="justify-start" onClick={() => navigate("/dashboard")}>Dashboard</Button>
+               <Button variant="ghost" className="justify-start text-[var(--danger)]" onClick={handleLogout}>Logout</Button>
+             </>
+          ) : (
+            <>
+              <Button variant="ghost" className="justify-start" onClick={() => navigate("/login")}>Login</Button>
+              <Button className="justify-start" onClick={() => navigate("/register")}>Get Started</Button>
+            </>
+          )}
+        </div>
+      )}
+    </header>
+  );
+};
+
+export default Navbar;

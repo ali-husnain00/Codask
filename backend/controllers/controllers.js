@@ -7,6 +7,7 @@ import project from "../models/project.js";
 import file from "../models/file.js";
 import invite from "../models/invite.js";
 import task from "../models/task.js";
+import { sendError, sendSuccess } from "../utils/response.js";
 
 
 export const register = async (req, res) => {
@@ -14,12 +15,16 @@ export const register = async (req, res) => {
 
   try {
     if (!username || !email || !password) {
-      return res.status(400).send("All fields are required!");
+      return sendError(res, 400, "All fields are required", "VALIDATION_ERROR");
     }
 
     const existingUser = await user.findOne({ email });
     if (existingUser) {
-      return res.status(409).send("User already exists");
+      return sendError(res, 409, "User already exists", "USER_EXISTS");
+    }
+
+    if(existingUser?.username === username) {
+      return sendError(res, 409, "Username already taken", "USERNAME_TAKEN");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -30,10 +35,12 @@ export const register = async (req, res) => {
       password: hashedPassword,
     });
 
-    res.status(200).send("User created successfully!");
+    return sendSuccess(res, 201, "User created successfully");
   } catch (error) {
-    res.status(500).send("An error occured while creating user");
-    console.log(error);
+    if(error.code === 11000) {
+      return sendError(res, 409, "Username already taken", "USERNAME_TAKEN");
+    }
+    return sendError(res, 500, "An error occured while creating user", "REGISTER_FAILED");
   }
 };
 
@@ -42,17 +49,17 @@ export const login = async (req, res) => {
 
   try {
     if (!email || !password) {
-      return res.status(400).send("All fields are required!");
+      return sendError(res, 400, "All fields are required", "VALIDATION_ERROR");
     }
 
     const existingUser = await user.findOne({ email });
     if (!existingUser) {
-      return res.status(404).send("User not found");
+      return sendError(res, 404, "User not found", "USER_NOT_FOUND");
     }
 
     const isMatched = await bcrypt.compare(password, existingUser.password);
     if (!isMatched) {
-      return res.status(401).send("Unauthorized: Invalid credentials!");
+      return sendError(res, 401, "Unauthorized: Invalid credentials", "INVALID_CREDENTIALS");
     }
 
     const token = jwt.sign({ id: existingUser._id }, process.env.SECRET_KEY, {
@@ -61,14 +68,14 @@ export const login = async (req, res) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true,
-      sameSite: "None",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
     });
 
-    res.status(200).send("Login successful!");
+    return sendSuccess(res, 200, "Login successful");
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).send("An error occurred during login");
+    return sendError(res, 500, "An error occurred during login", "LOGIN_FAILED");
   }
 };
 
@@ -76,12 +83,12 @@ export const logout = (req, res) => {
   try {
     res.clearCookie("token", {
       httpOnly: true,
-      secure: true,
-      sameSite: "None",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
     });
-    res.status(200).send("User Logged out successfully!");
+    return sendSuccess(res, 200, "User logged out successfully");
   } catch (error) {
-    console.log(error);
+    return sendError(res, 500, "Error during logout", "LOGOUT_FAILED");
   }
 };
 
@@ -100,13 +107,13 @@ export const getLoggedInUser = async (req, res) => {
       });
 
     if (!existingUser) {
-      return res.status(404).send("User not found!");
+      return sendError(res, 404, "User not found", "USER_NOT_FOUND");
     }
 
-    res.status(200).json(existingUser);
+    return sendSuccess(res, 200, "Logged in user fetched", existingUser);
   } catch (error) {
     console.error("Error getting logged-in user:", error.message);
-    res.status(500).send("An error occurred while getting the logged-in user");
+    return sendError(res, 500, "An error occurred while getting the logged-in user", "FETCH_USER_FAILED");
   }
 };
 
@@ -115,17 +122,16 @@ export const getAssignedProjects = async (req, res) => {
   try {
     const existingUser = await user.findById(userId);
     if (!existingUser) {
-      return res.status(404).send("User not found!");
+      return sendError(res, 404, "User not found", "USER_NOT_FOUND");
     }
 
     const assignedProjects = await project.find({
       "members.userId": userId,
     });
 
-    res.status(200).send(assignedProjects);
+    return sendSuccess(res, 200, "Assigned projects fetched", assignedProjects);
   } catch (error) {
-    console.log(error);
-    res.status(500).send("An error occurred while getting assigned projects");
+    return sendError(res, 500, "An error occurred while getting assigned projects", "FETCH_ASSIGNED_PROJECTS_FAILED");
   }
 };
 
@@ -136,11 +142,11 @@ export const createProject = async (req, res) => {
   try {
     const existingUser = await user.findById(userId);
     if (!existingUser) {
-      return res.status(404).send("User not found!");
+      return sendError(res, 404, "User not found", "USER_NOT_FOUND");
     }
 
     if (!title || !description || !language) {
-      return res.status(400).send("All fields are required!");
+      return sendError(res, 400, "All fields are required", "VALIDATION_ERROR");
     }
 
     const roomId = crypto.randomBytes(4).toString("hex");
@@ -177,12 +183,12 @@ export const createProject = async (req, res) => {
     existingUser.projects.push(newProject._id);
     await existingUser.save();
 
-    res
-      .status(200)
-      .send({ roomId: newProject.roomId, projectId: newProject._id });
+    return sendSuccess(res, 201, "Project created successfully", {
+      roomId: newProject.roomId,
+      projectId: newProject._id,
+    });
   } catch (error) {
-    res.status(500).send("An error occured while creating project");
-    console.log(error);
+    return sendError(res, 500, "An error occured while creating project", "CREATE_PROJECT_FAILED");
   }
 };
 export const getProjectById = async (req, res) => {
@@ -195,13 +201,12 @@ export const getProjectById = async (req, res) => {
       .populate("files")
       .populate("tasks");
     if (!existingProject) {
-      return res.status(404).send("Project not found!");
+      return sendError(res, 404, "Project not found", "PROJECT_NOT_FOUND");
     }
 
-    res.status(200).send(existingProject);
+    return sendSuccess(res, 200, "Project details fetched", existingProject);
   } catch (error) {
-    res.status(500).send("An error occured while getting project details");
-    console.log(error);
+    return sendError(res, 500, "An error occured while getting project details", "FETCH_PROJECT_FAILED");
   }
 };
 
@@ -213,19 +218,22 @@ export const createNewFile = async (req, res) => {
   try {
     const existingUser = await user.findById(userId);
     if (!existingUser) {
-      return res.status(404).send("User not found!");
+      return sendError(res, 404, "User not found", "USER_NOT_FOUND");
     }
 
     const proj = await project.findById(projectId).populate("files");
     if (!proj) {
-      return res.status(404).send("Project not found!");
+      return sendError(res, 404, "Project not found", "PROJECT_NOT_FOUND");
     }
 
     const isDuplicate = proj.files.some((file) => file.filename === filename);
     if (isDuplicate) {
-      return res
-        .status(400)
-        .send("A file with the same name already exists in this project.");
+      return sendError(
+        res,
+        400,
+        "A file with the same name already exists in this project",
+        "DUPLICATE_FILE"
+      );
     }
 
     const newFile = await file.create({
@@ -239,10 +247,9 @@ export const createNewFile = async (req, res) => {
     proj.files.push(newFile._id);
     await proj.save();
 
-    res.status(201).send(newFile);
+    return sendSuccess(res, 201, "File created successfully", newFile);
   } catch (error) {
-    console.error(error);
-    res.status(500).send("An error occurred while creating the new file.");
+    return sendError(res, 500, "An error occurred while creating the new file", "CREATE_FILE_FAILED");
   }
 };
 
@@ -251,15 +258,15 @@ export const saveCode = async (req, res) => {
   try {
     const f = await file.findById(fileId);
     if (!f) {
-      return res.status(404).send("File not found!");
+      return sendError(res, 404, "File not found", "FILE_NOT_FOUND");
     }
 
     f.content = content;
     await f.save();
 
-    res.status(200).send("File code saved");
+    return sendSuccess(res, 200, "File code saved");
   } catch (error) {
-    res.status(500).send("An error occured while saving the code");
+    return sendError(res, 500, "An error occured while saving the code", "SAVE_CODE_FAILED");
   }
 };
 
@@ -268,13 +275,15 @@ export const getAllUsers = async (req, res) => {
   try {
     const existingUser = await user.findById(userId);
     if (!existingUser) {
-      return res.status(404).send("User not found!");
+      return sendError(res, 404, "User not found", "USER_NOT_FOUND");
     }
     const allUser = await user
       .find({ _id: { $nin: userId } })
       .select("username email");
-    res.status(200).send(allUser);
-  } catch (error) {}
+    return sendSuccess(res, 200, "Users fetched successfully", allUser);
+  } catch (error) {
+    return sendError(res, 500, "An error occurred while getting users", "FETCH_USERS_FAILED");
+  }
 };
 
 export const sendInvite = async (req, res) => {
@@ -283,29 +292,23 @@ export const sendInvite = async (req, res) => {
 
   try {
     if (!projectId || !receiverEmail) {
-      return res
-        .status(400)
-        .json({ msg: "Project ID and receiver email are required!" });
+      return sendError(res, 400, "Project ID and receiver email are required", "VALIDATION_ERROR");
     }
 
     const senderUser = await user.findById(userId);
     const receiverUser = await user.findOne({ email: receiverEmail });
 
     if (!senderUser || !receiverUser) {
-      return res
-        .status(400)
-        .json({ msg: "Sender or receiver user not found!" });
+      return sendError(res, 400, "Sender or receiver user not found", "USER_NOT_FOUND");
     }
 
     const proj = await project.findById(projectId);
     if (!proj) {
-      return res.status(404).json({ msg: "Project not found!" });
+      return sendError(res, 404, "Project not found", "PROJECT_NOT_FOUND");
     }
 
     if (proj.lead.toString() !== userId) {
-      return res
-        .status(403)
-        .json({ msg: "Only the project lead can send invites." });
+      return sendError(res, 403, "Only the project lead can send invites", "FORBIDDEN");
     }
 
     const newInvite = await invite.create({
@@ -318,10 +321,9 @@ export const sendInvite = async (req, res) => {
     receiverUser.invites.push(newInvite._id);
     await receiverUser.save();
 
-    res.status(200).json({ msg: "Invite sent successfully!" });
+    return sendSuccess(res, 200, "Invite sent successfully");
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ msg: "An error occurred while sending invite" });
+    return sendError(res, 500, "An error occurred while sending invite", "SEND_INVITE_FAILED");
   }
 };
 
@@ -330,17 +332,16 @@ export const getInvites = async (req, res) => {
   try {
     const existingUser = await user.findById(userId);
     if (!existingUser) {
-      return res.status(404).send("User not found!");
+      return sendError(res, 404, "User not found", "USER_NOT_FOUND");
     }
 
     const inv = await invite
       .find({ to: userId })
       .populate("projectId", "title description")
       .populate("from", "username email");
-    res.status(200).send(inv);
+    return sendSuccess(res, 200, "Invites fetched", inv);
   } catch (error) {
-    res.status(500).send("An error occured while getting invites on dashboard");
-    console.log(error);
+    return sendError(res, 500, "An error occured while getting invites on dashboard", "FETCH_INVITES_FAILED");
   }
 };
 
@@ -351,16 +352,16 @@ export const respondInvite = async (req, res) => {
   try {
     const existingUser = await user.findById(userId);
     if (!existingUser) {
-      return res.status(404).send("User not found!");
+      return sendError(res, 404, "User not found", "USER_NOT_FOUND");
     }
     const inv = await invite.findById(inviteId);
     if (!inv) {
-      return res.status(404).send("Invite not found!");
+      return sendError(res, 404, "Invite not found", "INVITE_NOT_FOUND");
     }
 
     const proj = await project.findById(inv.projectId);
     if (!proj) {
-      return res.status(404).send("Project not found!");
+      return sendError(res, 404, "Project not found", "PROJECT_NOT_FOUND");
     }
 
     switch (action) {
@@ -381,15 +382,12 @@ export const respondInvite = async (req, res) => {
         await inv.save();
         break;
       default:
-        return res.status(400).send("Invalid action");
+        return sendError(res, 400, "Invalid action", "INVALID_ACTION");
     }
 
-    res.status(200).send("Invite status updated");
+    return sendSuccess(res, 200, "Invite status updated");
   } catch (error) {
-    res
-      .status(500)
-      .send("An error occured while updating the status of invite");
-    console.log(error);
+    return sendError(res, 500, "An error occured while updating the status of invite", "UPDATE_INVITE_FAILED");
   }
 };
 
@@ -400,18 +398,16 @@ export const deleteProjectById = async (req, res) => {
   try {
     const existingUser = await user.findById(userId);
     if (!existingUser) {
-      return res.status(404).send("User not found!");
+      return sendError(res, 404, "User not found", "USER_NOT_FOUND");
     }
 
     const proj = await project.findById(projectId);
     if (!proj) {
-      return res.status(404).send("Project not found!");
+      return sendError(res, 404, "Project not found", "PROJECT_NOT_FOUND");
     }
 
     if (proj.lead.toString() !== userId) {
-      return res
-        .status(403)
-        .send("Only the project lead can delete the project.");
+      return sendError(res, 403, "Only the project lead can delete the project", "FORBIDDEN");
     }
 
     await project.findByIdAndDelete(projectId);
@@ -421,10 +417,9 @@ export const deleteProjectById = async (req, res) => {
     );
     await existingUser.save();
 
-    res.status(200).send("Project deleted successfully!");
+    return sendSuccess(res, 200, "Project deleted successfully");
   } catch (error) {
-    console.log(error);
-    res.status(500).send("Server error while deleting project");
+    return sendError(res, 500, "Server error while deleting project", "DELETE_PROJECT_FAILED");
   }
 };
 
@@ -435,25 +430,21 @@ export const assignTask = async (req, res) => {
 
   try {
     const existingUser = await user.findById(userId);
-    if (!existingUser) return res.status(404).json({ msg: "User not found!" });
+    if (!existingUser) return sendError(res, 404, "User not found", "USER_NOT_FOUND");
 
     const existingProject = await project.findById(projectId);
-    if (!existingProject)
-      return res.status(404).json({ msg: "Project not found!" });
+    if (!existingProject) return sendError(res, 404, "Project not found", "PROJECT_NOT_FOUND");
 
     const lead = existingProject.members.find(
       (memb) => memb.role === "Project lead"
     );
 
     if (existingUser._id.toString() !== lead.userId.toString()) {
-      return res
-        .status(403)
-        .send({ msg: "Only project lead can assign tasks!" });
+      return sendError(res, 403, "Only project lead can assign tasks", "FORBIDDEN");
     }
 
     const assignedUser = await user.findById(assignedTo);
-    if (!assignedUser)
-      return res.status(404).json({ msg: "Assigned user not found!" });
+    if (!assignedUser) return sendError(res, 404, "Assigned user not found", "ASSIGNED_USER_NOT_FOUND");
 
     const newTask = await task.create({
       projectId,
@@ -467,10 +458,9 @@ export const assignTask = async (req, res) => {
     existingProject.tasks.push(newTask._id);
     await existingProject.save();
 
-    res.status(200).json({ msg: "Task assigned successfully!" });
+    return sendSuccess(res, 200, "Task assigned successfully");
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ msg: "An error occurred while assigning the task" });
+    return sendError(res, 500, "An error occurred while assigning the task", "ASSIGN_TASK_FAILED");
   }
 };
 
@@ -480,7 +470,7 @@ export const getUserTasks = async (req, res) => {
   try {
     const existingUser = await user.findById(userId);
     if (!existingUser) {
-      return res.status(404).json({ msg: "User not found!" });
+      return sendError(res, 404, "User not found", "USER_NOT_FOUND");
     }
 
     const tasks = await task.find({ assignedTo: userId }).populate({
@@ -491,10 +481,9 @@ export const getUserTasks = async (req, res) => {
         select: "username email",
       },
     });
-    res.status(200).json(tasks);
+    return sendSuccess(res, 200, "Tasks fetched successfully", tasks);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ msg: "An error occurred while getting user tasks" });
+    return sendError(res, 500, "An error occurred while getting user tasks", "FETCH_TASKS_FAILED");
   }
 };
 
@@ -518,7 +507,7 @@ export const updateTaskStatus = async (req, res) => {
   const { status } = req.body;
 
   if (!["Pending", "In Progress", "Completed"].includes(status)) {
-    return res.status(400).json({ msg: "Invalid status" });
+    return sendError(res, 400, "Invalid status", "INVALID_STATUS");
   }
 
   try {
@@ -528,14 +517,13 @@ export const updateTaskStatus = async (req, res) => {
       { new: true }
     );
 
-    if (!updatedTask) return res.status(404).json({ msg: "Task not found" });
+    if (!updatedTask) return sendError(res, 404, "Task not found", "TASK_NOT_FOUND");
 
     await updateProjectProgress(updatedTask.projectId);
 
-    res.status(200).json({ msg: "Status updated", task: updatedTask });
+    return sendSuccess(res, 200, "Status updated", { task: updatedTask });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ msg: "Failed to update task status" });
+    return sendError(res, 500, "Failed to update task status", "UPDATE_TASK_STATUS_FAILED");
   }
 };
 
@@ -543,24 +531,93 @@ export const getMessages = async (req, res) => {
   const { projectId } = req.query;
 
   if (!projectId) {
-    return res.status(400).send("Project ID is required");
+    return sendError(res, 400, "Project ID is required", "VALIDATION_ERROR");
   }
 
   try {
     const existingProject = await project.findById(projectId);
     if (!existingProject) {
-      return res.status(404).send("Project not found");
+      return sendError(res, 404, "Project not found", "PROJECT_NOT_FOUND");
     }
 
     const allMessages = await message
       .find({ projectId })
       .populate("sender", "username");
 
-    res.status(200).json(allMessages);
+    return sendSuccess(res, 200, "Messages fetched successfully", allMessages);
   } catch (error) {
-    console.error("Error fetching messages:", error);
-    res
-      .status(500)
-      .send("An error occurred while retrieving the previous messages");
+    return sendError(res, 500, "An error occurred while retrieving the previous messages", "FETCH_MESSAGES_FAILED");
+  }
+};
+
+export const executeCode = async (req, res) => {
+  const { language, sourceCode, stdin } = req.body;
+
+  if (!language || !sourceCode) {
+    return sendError(res, 400, "Language and source code are required", "VALIDATION_ERROR");
+  }
+
+  const getJudge0LanguageId = (lang) => {
+    switch (lang.toLowerCase()) {
+      case 'javascript': return 93;
+      case 'python': return 92;
+      case 'cpp': return 54;
+      case 'java': return 91;
+      default: return null;
+    }
+  };
+
+  const languageId = getJudge0LanguageId(language);
+  if (!languageId) {
+    return sendError(res, 400, `Unsupported language: ${language}`, "UNSUPPORTED_LANGUAGE");
+  }
+
+  try {
+    const JUDGE0_URL = process.env.JUDGE0_URL || "https://judge0-ce.p.rapidapi.com";
+    const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "";
+    const RAPIDAPI_HOST = process.env.RAPIDAPI_HOST || "judge0-ce.p.rapidapi.com";
+
+    if (!RAPIDAPI_KEY) {
+      return sendError(res, 401, "Missing RAPIDAPI_KEY in backend .env file. Judge0 requires a free API key from RapidAPI.", "MISSING_API_KEY");
+    }
+
+    const headers = {
+      "Content-Type": "application/json",
+      "X-RapidAPI-Key": RAPIDAPI_KEY,
+      "X-RapidAPI-Host": RAPIDAPI_HOST
+    };
+
+    // Since users may not have a RapidAPI key configured in env, 
+    // we'll try to execute via RapidAPI if key exists, else fallback to a public instance or mock.
+    // Assuming the user has configured this properly or will do so.
+    
+    const response = await fetch(`${JUDGE0_URL}/submissions?base64_encoded=false&wait=true`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        language_id: languageId,
+        source_code: sourceCode,
+        stdin: stdin || ""
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Judge0 API Error:", errorText);
+      return sendError(res, response.status, "Execution failed", "JUDGE0_ERROR");
+    }
+
+    const data = await response.json();
+    return sendSuccess(res, 200, "Code executed successfully", {
+      stdout: data.stdout,
+      stderr: data.stderr,
+      compile_output: data.compile_output,
+      time: data.time,
+      memory: data.memory,
+      status: data.status
+    });
+  } catch (error) {
+    console.error("Execution error:", error);
+    return sendError(res, 500, "Server error during execution", "EXECUTION_FAILED");
   }
 };

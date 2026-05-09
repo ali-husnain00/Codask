@@ -1,10 +1,17 @@
 import React, { useState, useEffect, useContext } from 'react';
-import './ProjectDetails.css';
 import { useParams } from 'react-router-dom';
 import { Context } from '../../components/context/context';
 import { toast } from 'sonner';
-import { MdClose } from 'react-icons/md';
 import Loader from '../../components/Loader/Loader';
+import { apiRequest } from '../../lib/apiClient';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent } from '../../components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../components/ui/dialog';
+import { Input } from '../../components/ui/input';
+import { Textarea } from '../../components/ui/textarea';
+import { Select } from '../../components/ui/select';
+import { Label } from '../../components/ui/label';
 
 const ProjectDetails = () => {
     const { id } = useParams();
@@ -23,18 +30,10 @@ const ProjectDetails = () => {
     const fetchProject = async () => {
         setLoading(true)
         try {
-            const res = await fetch(`${BASE_URL}/project/${id}`, {
-                method: "GET",
-                credentials: "include"
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setProject(data);
-            } else {
-                toast.error("Failed to load project details");
-            }
+            const payload = await apiRequest(BASE_URL, `/project/${id}`);
+            setProject(payload.data || payload);
         } catch (err) {
-            toast.error("An error occurred while fetching project");
+            toast.error(err.message || "An error occurred while fetching project");
         }
         finally{
             setLoading(false)
@@ -53,26 +52,15 @@ const ProjectDetails = () => {
         }
         setLoading(true);
         try {
-            const res = await fetch(`${BASE_URL}/assignTask`, {
+            const data = await apiRequest(BASE_URL, "/assignTask", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
                 body: JSON.stringify({ ...t, projectId: id }),
             });
-
-            const data = await res.json();
-
-            if (res.ok) {
-                toast.success(data.msg);
-                setShowModal(false);
-                fetchProject();
-            } else if (res.status === 403 || res.status === 400) {
-                toast.warning(data.msg);
-            } else {
-                toast.error(data.msg || "Failed to assign task");
-            }
+            toast.success(data.message || data.msg || "Task assigned");
+            setShowModal(false);
+            fetchProject();
         } catch (err) {
-            toast.error("An unexpected error occurred");
+            toast.error(err.message || "An unexpected error occurred");
         } finally {
             setLoading(false);
         }
@@ -81,111 +69,118 @@ const ProjectDetails = () => {
     if (!project || loading) return <Loader />
 
     return (
-        <div className="project-details-page">
-            <div className="project-header">
-                <div className='proj-title'>
-                    <h2>{project.title}</h2>
-                    <span className="language-tag">{project.language.toUpperCase()}</span>
+    <div className="mx-auto max-w-7xl space-y-8 p-6 lg:p-8 text-[var(--text)]">
+        <Card>
+            <CardContent className="p-6 md:p-8">
+                <div className='flex flex-wrap items-center gap-3 sm:gap-6'>
+                    <h2 className="break-all">{project.title}</h2>
+                    <Badge className="rounded-md px-3 py-1 text-sm font-bold">{project.language.toUpperCase()}</Badge>
                 </div>
-                <p className="description">{project.description}</p>
-                <div className="progress-wrapper">
-                    <label>Progress</label>
-                    <div className="progress-bar">
-                        <div className="fill" style={{ width: `${project.progress}%` }}></div>
+                <p className="mt-3 text-sm text-[var(--text-muted)]">{project.description}</p>
+                <div className="mt-6 w-full max-w-[800px]">
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="text-sm font-medium">Progress</label>
+                        <span className="text-sm text-[var(--text-muted)]">{project.progress}%</span>
                     </div>
-                    <span>{project.progress}%</span>
+                    <div className="h-2 w-full rounded-full bg-[var(--surface-soft)] border border-[var(--border)] overflow-hidden">
+                        <div className="h-full rounded-full bg-[var(--text)] transition-all" style={{ width: `${project.progress}%` }}></div>
+                    </div>
                 </div>
-                <div className="project-meta">
+                <div className="mt-4 flex flex-wrap gap-4 text-sm">
                     <span><strong>Lead:</strong> {project.lead?.username}</span>
                     <span><strong>Email:</strong> {project.lead?.email}</span>
                     <span><strong>Created:</strong> {new Date(project.createdAt).toLocaleDateString()}</span>
                     <span><strong>Team:</strong> {project.members?.length} Members</span>
                 </div>
-            </div>
+              </CardContent>
+            </Card>
 
-            <div className="team-section">
-                <h3>Team Members</h3>
+            <div className="mt-12">
+                <h3 className="mb-6">Team Members</h3>
                 {
                     project.members.length === 0 ?
                         (
                             <p>No members found</p>
                         ) : (
-                            <div className="member-grid">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {project.members.map((member) => (
-                                    <div key={member.userId._id} className="member-card">
-                                        <div className="card-header">
-                                            <div className="avatar">{member.userId.username[0]}</div>
-                                            <div className="user-info">
-                                                <h3 className="username">{member.userId.username}</h3>
-                                                <p className="email">{member.userId.email}</p>
+                                    <Card key={member.userId._id} className="flex flex-col justify-between h-full bg-[var(--surface-soft)]">
+                                      <CardContent className="flex flex-col justify-between h-full gap-6 p-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--border)] text-lg font-bold text-[var(--text)]">{member.userId.username[0]}</div>
+                                            <div>
+                                                <h3>{member.userId.username}</h3>
+                                                <p className="text-sm text-[var(--text-muted)]">{member.userId.email}</p>
                                             </div>
                                         </div>
-                                        <div className="card-footer">
-                                            <span className={`role-badge ${member.role === 'Project lead' ? 'lead' : 'developer'}`}>
+                                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-[var(--border)]">
+                                            <Badge variant={member.role === 'Project lead' ? 'success' : 'outline'}>
                                                 {member.role === 'Project lead' ? 'Project Lead' : 'Developer'}
-                                            </span>
-                                            <button
+                                            </Badge>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
                                                 onClick={() => {
                                                     setT({ ...t, assignedTo: member.userId._id });
                                                     setShowModal(true);
                                                 }}
-                                                className="assign-btn"
                                             >
                                                 Assign Task
-                                            </button>
+                                            </Button>
                                         </div>
-                                    </div>
+                                      </CardContent>
+                                    </Card>
                                 ))}
                             </div>
                         )
                 }
             </div>
 
-            {showModal && (
-                <div className="modal-overlay">
-                    <div className="modal">
-                        <div className="modal-header">
-                            <h3>Assign Task</h3>
-                            <MdClose className="close-icon" onClick={() => setShowModal(false)} />
-                        </div>
-                        <form className="task-modal-form" onSubmit={handleTaskAssign}>
-                            <input
-                                type="text"
-                                placeholder="Task Title"
-                                value={t.title}
-                                onChange={(e) => setT({ ...t, title: e.target.value })}
-                                required
-                            />
-                            <textarea
-                                placeholder="Description"
-                                value={t.description}
-                                onChange={(e) => setT({ ...t, description: e.target.value })}
-                                required
-                            />
-                            <label>
-                                Due Date:
-                                <input
-                                    type="date"
-                                    value={t.dueDate}
-                                    onChange={(e) => setT({ ...t, dueDate: e.target.value })}
-                                />
-                            </label>
-                            <label>
-                                Priority:
-                                <select
-                                    value={t.priority}
-                                    onChange={(e) => setT({ ...t, priority: e.target.value })}
-                                >
-                                    <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                </select>
-                            </label>
-                            <button type="submit">Assign Task</button>
-                        </form>
-                    </div>
-                </div>
-            )}
+            <Dialog open={showModal} onOpenChange={setShowModal}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Assign Task</DialogTitle>
+                  <DialogDescription>Assign a task to selected team member.</DialogDescription>
+                </DialogHeader>
+                <form className="grid gap-3" onSubmit={handleTaskAssign}>
+                  <Input
+                    type="text"
+                    placeholder="Task Title"
+                    value={t.title}
+                    onChange={(e) => setT({ ...t, title: e.target.value })}
+                    required
+                  />
+                  <Textarea
+                    placeholder="Description"
+                    value={t.description}
+                    onChange={(e) => setT({ ...t, description: e.target.value })}
+                    required
+                  />
+                  <Label>
+                    Due Date:
+                    <Input
+                      className="mt-1"
+                      type="date"
+                      value={t.dueDate}
+                      onChange={(e) => setT({ ...t, dueDate: e.target.value })}
+                    />
+                  </Label>
+                  <Label>
+                    Priority:
+                    <Select
+                      className="mt-1"
+                      value={t.priority}
+                      onChange={(e) => setT({ ...t, priority: e.target.value })}
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                    </Select>
+                  </Label>
+                  <Button type="submit">Assign Task</Button>
+                </form>
+              </DialogContent>
+            </Dialog>
         </div>
     );
 };

@@ -1,5 +1,5 @@
 import express from "express";
-import { assignTask, createNewFile, createProject, deleteProjectById, getAllUsers, getAssignedProjects, getInvites, getLoggedInUser, getMessages, getProjectById, getUserTasks, login, logout, register, respondInvite, saveCode, sendInvite, updateTaskStatus } from "../controllers/controllers.js";
+import { assignTask, createNewFile, createProject, deleteProjectById, getAllUsers, getAssignedProjects, getInvites, getLoggedInUser, getMessages, getProjectById, getUserTasks, login, logout, register, respondInvite, saveCode, sendInvite, updateTaskStatus, executeCode } from "../controllers/controllers.js";
 import verifyToken from "../middlewares/verifyToken.js";
 
 const router = express.Router();
@@ -13,6 +13,7 @@ router.post("/createProject", verifyToken, createProject)
 router.get("/project/:id", verifyToken, getProjectById)
 router.post("/createNewFile/:projectId", verifyToken, createNewFile)
 router.post("/saveCode", verifyToken, saveCode)
+router.post("/executeCode", verifyToken, executeCode)
 router.get("/getAllUsers", verifyToken, getAllUsers)
 router.post("/send-invite", verifyToken, sendInvite)
 router.get("/getInvites", verifyToken, getInvites)

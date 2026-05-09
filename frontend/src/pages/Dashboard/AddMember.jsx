@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
-import './AddMember.css';
 import { Context } from '../../components/context/context';
 import { toast } from 'sonner';
+import { apiRequest } from '../../lib/apiClient';
+import { Input } from '../../components/ui/input';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent } from '../../components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../components/ui/dialog';
+import { PageHeader } from '../../components/ui/page-header';
 
 const AddMember = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -17,15 +22,8 @@ const AddMember = () => {
 
     const getAllUsers = async () => {
         try {
-            const res = await fetch(`${BASE_URL}/getAllUsers`, {
-                method: "GET",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include"
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setUsers(data);
-            }
+            const data = await apiRequest(BASE_URL, "/getAllUsers");
+            setUsers(data.data || data);
         } catch (error) {
             console.error("Error fetching users:", error);
         }
@@ -39,28 +37,21 @@ const AddMember = () => {
     const sendInvite = async () => {
         if (!projectId) {
             toast.warning("ProjectId is required!");
+            return;
         }
         try {
-            const res = await fetch(`${BASE_URL}/send-invite`, {
+            const data = await apiRequest(BASE_URL, "/send-invite", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
                 body: JSON.stringify({
                     projectId,
                     receiverEmail: selectedUser.email
                 })
             });
-            const data = await res.json();
-            if (res.ok) {
-                toast.success(data.msg);
-                setShowModal(false);
-                setProjectId('');
-            } 
-            else{
-                toast.error(data.msg)
-            }
+            toast.success(data.message || data.msg || "Invite sent");
+            setShowModal(false);
+            setProjectId('');
         } catch (error) {
-            console.log("Error sending invite" + error);
+            toast.error(error.message || "Error sending invite");
         }
     };
 
@@ -69,10 +60,10 @@ const AddMember = () => {
     }, []);
 
     return (
-        <div className="add-member-panel">
-            <h2>Add Members</h2>
-            <div className="search-bar">
-                <input
+        <div className="space-y-6">
+            <PageHeader title="Add Members" className="mb-4" />
+            <div className="max-w-md">
+                <Input
                     type="text"
                     placeholder="Search users by name or email..."
                     value={searchTerm}
@@ -80,46 +71,48 @@ const AddMember = () => {
                 />
             </div>
 
-            <div className="user-list">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 mt-6">
                 {filteredUsers.length > 0 ? filteredUsers.map(user => (
-                    <div className="user-card" key={user._id}>
-                        <div className="avatar">
+                    <Card key={user._id} className="bg-[var(--surface-soft)]">
+                      <CardContent className="flex items-center gap-4 p-4">
+                        <div>
                             {user.avatar ? (
-                                <img src={user.avatar} alt="avatar" />
+                                <img className="h-12 w-12 rounded-full object-cover" src={user.avatar} alt="avatar" />
                             ) : (
-                                <div className="avatar-placeholder">{user.username[0]}</div>
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--border)] text-lg font-bold text-[var(--text)]">{user.username[0]}</div>
                             )}
                         </div>
-                        <div className="user-info">
-                            <p className="name">{user.username}</p>
-                            <p className="email">{user.email}</p>
+                        <div className="flex-1">
+                            <p className="font-semibold">{user.username}</p>
+                            <p className="text-sm text-[var(--text-muted)]">{user.email}</p>
                         </div>
-                        <button className="invite-btn" onClick={() => handleInvite(user)}>Invite</button>
-                    </div>
+                        <Button className="h-8 px-3 py-1.5 text-xs" onClick={() => handleInvite(user)}>Invite</Button>
+                      </CardContent>
+                    </Card>
                 )) : (
-                    <p className="no-results">No user found</p>
+                    <p className="text-[var(--text-muted)]">No user found</p>
                 )}
             </div>
 
-            {showModal && (
-                <div className="invite-modal-overlay">
-                    <div className="invite-modal">
-                        <h3>Send Invite</h3>
-                        <p>Inviting <strong>{selectedUser.username}</strong></p>
-                        <input
-                            type="text"
-                            placeholder="Enter Project ID"
-                            value={projectId}
-                            onChange={(e) => setProjectId(e.target.value)}
-                            required
-                        />
-                        <div className="modal-actions">
-                            <button className="cancel-btn" onClick={() => setShowModal(false)}>Cancel</button>
-                            <button className="send-btn" onClick={sendInvite}>Send</button>
-                        </div>
-                    </div>
+            <Dialog open={showModal} onOpenChange={setShowModal}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Send Invite</DialogTitle>
+                  <DialogDescription>Inviting <strong>{selectedUser?.username}</strong></DialogDescription>
+                </DialogHeader>
+                <Input
+                  type="text"
+                  placeholder="Enter Project ID"
+                  value={projectId}
+                  onChange={(e) => setProjectId(e.target.value)}
+                  required
+                />
+                <div className="mt-1 flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setShowModal(false)}>Cancel</Button>
+                  <Button onClick={sendInvite}>Send</Button>
                 </div>
-            )}
+              </DialogContent>
+            </Dialog>
         </div>
     );
 };

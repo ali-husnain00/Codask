@@ -1,5 +1,7 @@
 import { createContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { apiRequest } from "../../lib/apiClient";
 
 export const Context = createContext(null)
 
@@ -13,22 +15,9 @@ const ContextProvider = ({ children }) => {
 
     const getLoggedInUser = async () => {
         try {
-            const res = await fetch(`${BASE_URL}/getLoggedInUser`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                credentials: "include"
-            })
-            if (res.ok) {
-                const data = await res.json();
-                setUser(data)
-            }
-            else {
-                setUser(null)
-            }
-        } catch (error) {
-            console.log("An error occured while getting loggedIn user" + error)
+            const data = await apiRequest(BASE_URL, "/getLoggedInUser");
+            setUser(data.data || data);
+        } catch {
             setUser(null)
         }
         finally {
@@ -39,20 +28,11 @@ const ContextProvider = ({ children }) => {
     const getProject = async (id) => {
         setLoading(true)
         try {
-            const res = await fetch(`${BASE_URL}/project/${id}`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                credentials: "include"
-            })
-            if (res.ok) {
-                const data = await res.json();
-                setEditorData(data);
-                navigate(`/editor/${id}`)
-            }
+            const data = await apiRequest(BASE_URL, `/project/${id}`);
+            setEditorData(data.data || data);
+            navigate(`/editor/${id}`)
         } catch (error) {
-            toast.error("An error occured while opening project!")
+            toast.error(error.message || "An error occured while opening project!")
         }
         finally {
             setLoading(false)
@@ -61,27 +41,21 @@ const ContextProvider = ({ children }) => {
 
     const getAssignedProjects = async () => {
         try {
-            const res = await fetch(`${BASE_URL}/getAssignedProjects`, {
-                method: "GET",
-                credentials: "include",
+            const payload = await apiRequest(BASE_URL, "/getAssignedProjects");
+            const data = payload.data || payload;
+
+            const filteredProjects = data.filter((proj) => {
+                return !user.projects.some((p) => p._id.toString() === proj._id.toString());
             });
 
-            if (res.ok) {
-                const data = await res.json();
-
-                const filteredProjects = data.filter((proj) => {
-                    return !user.projects.some((p) => p._id.toString() === proj._id.toString());
-                });
-
-                if (filteredProjects.length > 0) {
-                    setUser(prev => ({
-                        ...prev,
-                        projects: [...prev.projects, ...filteredProjects]
-                    }));
-                }
+            if (filteredProjects.length > 0) {
+                setUser(prev => ({
+                    ...prev,
+                    projects: [...prev.projects, ...filteredProjects]
+                }));
             }
         } catch (error) {
-            console.error("Server error while fetching assigned projects:", error);
+            console.error("Server error while fetching assigned projects:", error.message);
         }
     };
 

@@ -1,10 +1,11 @@
 import jwt from "jsonwebtoken";
+import { sendError } from "../utils/response.js";
 
 const verifyToken = (req, res, next) =>{
     const token = req.cookies.token;
 
     if(!token){
-        return res.status(401).send("Access denied!")
+        return sendError(res, 401, "Access denied", "UNAUTHORIZED");
     }
 
     try {
@@ -12,8 +13,7 @@ const verifyToken = (req, res, next) =>{
         req.user = decoded;
         next();
     } catch (error) {
-        res.status(403).send("Invalid token!");
-        console.log(error);
+        return sendError(res, 403, "Invalid token", "INVALID_TOKEN");
     }
 }
 

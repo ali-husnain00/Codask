@@ -1,9 +1,12 @@
 import React, { useContext, useState } from 'react';
-import './Login.css';
 import { toast } from 'sonner';
 import { Link, useNavigate } from 'react-router-dom';
 import { Context } from '../../components/context/context';
 import Loader from '../../components/Loader/Loader';
+import { Input } from '../../components/ui/input';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent } from '../../components/ui/card';
+import { apiRequest } from '../../lib/apiClient';
 
 const Login = () => {
 
@@ -22,26 +25,15 @@ const Login = () => {
     }
     setLoading(true)
     try {
-      const res = await fetch(`${BASE_URL}/login`,{
+      await apiRequest(BASE_URL, "/login", {
         method:"POST",
-        headers:{
-          "Content-Type":"application/json"
-        },
         body: JSON.stringify({email,password}),
-        credentials:"include"
-      })
-      if(res.ok){
-        await getLoggedInUser();
-        toast.success("Login successful!");
-        setTimeout(() =>{
-          navigate("/dashboard")
-        },100)
-      }
-      else{
-        toast.error("An error occured while login!")
-      }
+      });
+      await getLoggedInUser();
+      toast.success("Login successful!");
+      navigate("/dashboard")
     } catch (error) {
-      console.log(error)
+      toast.error(error.message || "An error occured while login!")
     }
     finally{
       setLoading(false)
@@ -53,18 +45,23 @@ const Login = () => {
   }
 
   return (
-    <div className="login-container">
-      <form className="login-form" onSubmit={handleLogin}>
-        <h2>Welcome to <span>Codask</span></h2>
-        <p className="subtext">Login to collaborate and build smarter.</p>
-        <input type="email" value={email} onChange={(e) =>setEmail(e.target.value)} placeholder="Email" required />
-        <input type="password" value={password} onChange={(e) =>setPassword(e.target.value)} placeholder="Password" required />
-        <button type="submit">Login</button>
-
-        <p className="register-link">
-          Don't have an account? <Link to="/register">Register</Link>
-        </p>
-      </form>
+    <div className="flex min-h-[calc(100dvh-64px)] items-center justify-center p-6">
+      <Card className="w-full max-w-[400px] animate-[fadeSlideIn_.45s_ease-out]">
+        <CardContent className="p-8">
+          <form onSubmit={handleLogin} className="grid gap-4">
+            <h2 className="text-center text-2xl font-semibold tracking-tight">Welcome to <span className="text-[var(--text)]">Codask</span></h2>
+            <p className="text-center text-sm text-[var(--text-muted)]">Login to collaborate and build smarter.</p>
+            <div className="grid gap-3 mt-2">
+              <Input type="email" value={email} onChange={(e) =>setEmail(e.target.value)} placeholder="Email" required />
+              <Input type="password" value={password} onChange={(e) =>setPassword(e.target.value)} placeholder="Password" required />
+            </div>
+            <Button type="submit" className="w-full mt-2">Login</Button>
+            <p className="text-center text-sm text-[var(--text-muted)] mt-4">
+              Don't have an account? <Link className="text-[var(--text)] font-medium underline underline-offset-4" to="/register">Register</Link>
+            </p>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };
