@@ -66,10 +66,13 @@ export const login = async (req, res) => {
       expiresIn: "7d",
     });
 
+    const isLocalhost = req.get("origin")?.includes("localhost");
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+      secure: !isLocalhost,
+      sameSite: isLocalhost ? "Lax" : "None",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     return sendSuccess(res, 200, "Login successful");
@@ -81,10 +84,12 @@ export const login = async (req, res) => {
 
 export const logout = (req, res) => {
   try {
+    const isLocalhost = req.get("origin")?.includes("localhost");
     res.clearCookie("token", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+      secure: !isLocalhost,
+      sameSite: isLocalhost ? "Lax" : "None",
+      path: "/",
     });
     return sendSuccess(res, 200, "User logged out successfully");
   } catch (error) {

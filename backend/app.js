@@ -2,6 +2,7 @@ import express from "express";
 const app = express();
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
+app.set("trust proxy", 1);
 import cors from "cors";
 import connectDB from "./config/db.js";
 import { Server } from "socket.io";
