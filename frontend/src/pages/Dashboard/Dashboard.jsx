@@ -1,6 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { Context } from '../../components/context/context';
 import { Folder, CheckSquare, UserPlus, Mail, Menu, X, LogOut } from "lucide-react";
+import { toast } from 'sonner';
 import { apiRequest } from '../../lib/apiClient';
 import { Button } from '../../components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -34,8 +35,8 @@ const Dashboard = () => {
   const handleLogout = async () => {
     try {
       await apiRequest(BASE_URL, "/logout", { method: "POST" });
+      await getLoggedInUser();
       toast.success("Logout successful!");
-      getLoggedInUser();
       navigate("/login");
     } catch (error) {
       toast.error(error.message || "An error occured while logging out!");

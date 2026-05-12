@@ -26,8 +26,8 @@ const Navbar = () => {
   const handleLogout = async () => {
     try {
       await apiRequest(BASE_URL, "/logout", { method: "POST" });
+      await getLoggedInUser();
       toast.success("Logout successful!");
-      getLoggedInUser();
       navigate("/login");
     } catch (error) {
       toast.error(error.message || "An error occured while logging out!");
